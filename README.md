@@ -1,17 +1,17 @@
-# Import from DiversityWorkbench to Collection Catalogue
+# Import specimen and taxa from DiversityWorkbench databases to Collection Catalogue
 
 Documentation on importing Specimens and Taxa from DiversityWorkbench databases into the collections catalogue. The import requires 3 steps:
 
 
-1. Merge taxa from different DiversityTaxonNames databases into a common tree for the MySQL database of the collection catalogue. This is done by the [tnt_taxa_merger](https://gitlab.leibniz-lib.de/zfmk-collections/tnt_taxa_merger) script.
-2. Import specimen data from different DiversityCollection databases into the MySQL database of the collection catalogue. Check the taxon names applied to the specimens against the entries in the taxon tree and sort out specimens with unknown taxon names. This is done by the [sync_dwb_webportal](https://gitlab.leibniz-lib.de/zfmk-collections/sync_dwb_webportal) script.
-3. Index the data imported to the with a solr indexer. The configuration of the solr service is given in collsolr.
+1. Merge taxa from different DiversityTaxonNames databases into a common tree for the MySQL database of the collection catalogue. This is done by the [tnt_taxa_merger](https://github.com/ZFMK/tnt_taxa_merger) script.
+2. Import specimen data from different DiversityCollection databases into the MySQL database of the collection catalogue. Check the taxon names applied to the specimens against the entries in the taxon tree and sort out specimens with unknown taxon names. This is done by the [sync_dwb_webportal](https://github.com/ZFMK/dwb2portal) script.
+3. Index the data imported to the with a solr indexer. The configuration of the solr service is given in [collsolr](https://github.com/ZFMK/collsolr) .
 
 
 ## Prerequisites
 
-- FreeTDS installed as described [here](#freetds) 
-- One or more DiversityTaxonNames databases are available from which at least one contains a taxonomy that is rooted down to the Animal regnum (optionally you can use the GBIF taxonomy imported into a DiversityTaxonNames instance as described [here](https://gitlab.leibniz-lib.de/zfmk-collections/gbif2taxonnames))
+- FreeTDS installed as described [here](https://github.com/ZFMK/dwb2portal#freetds) 
+- One or more DiversityTaxonNames databases are available from which at least one contains a taxonomy that is rooted down to the Animal regnum (optionally you can use the GBIF taxonomy imported into a DiversityTaxonNames instance as described [here](https://github.com/ZFMK/gbif2mysql) and [here](https://github.com/ZFMK/gbif2tnt)
 
 
 ## Installation of required scripts
@@ -34,18 +34,13 @@ Upgrade pip and setuptools
 
 
 
-#### Clone sync_dwb_webportal from gitlab: 
+#### Clone sync_dwb_webportal from github.com: 
 
-    git clone https://gitlab.leibniz-lib.de/zfmk-collections/sync_dwb_webportal.git
-
-**Very important: change to branch `to_github`**
-
-    git checkout to_github
-
+    git clone https://github.com/ZFMK/dwb2catalogue.git
 
 #### Install the sync_dwb_webportal script
 
-    cd sync_dwb_webportal
+    cd dwb2catalogue
     python setup.py develop
 
 
@@ -83,6 +78,8 @@ Examples:
     analysis_id_tools = 95|110
     analysis_id_methods = 161
     respect_withhold = false
+
+The section names in brackets must match with entries in file `/etc/odbc.ini` (see [below](https://github.com/ZFMK/dwb2portal#freetds))
 
 
 #### Running the sync_dwb_webportal script
@@ -123,7 +120,7 @@ Register driver
 
 Create entry in `/etc/odbc.ini` 
 
-    [TaxonNames] 
+    [DWB@Server1] 
     Driver=FreeTDS
     TDS_Version=7.2
     APP=Some meaningful appname
