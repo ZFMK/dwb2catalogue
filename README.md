@@ -10,7 +10,7 @@ Documentation on importing Specimens and Taxa from DiversityWorkbench databases 
 
 ## Prerequisites
 
-- FreeTDS installed as described [here](https://github.com/ZFMK/dwb2portal#freetds) 
+- FreeTDS installed as described [here](https://github.com/ZFMK/dwb2catalogue/blob/main/README.md#freetds) 
 - One or more DiversityTaxonNames databases are available from which at least one contains a taxonomy that is rooted down to the Animal regnum (optionally you can use the GBIF taxonomy imported into a DiversityTaxonNames instance as described [here](https://github.com/ZFMK/gbif2mysql) and [here](https://github.com/ZFMK/gbif2tnt)
 
 
@@ -79,7 +79,7 @@ Examples:
     analysis_id_methods = 161
     respect_withhold = false
 
-The section names in brackets must match with entries in file `/etc/odbc.ini` (see [below](https://github.com/ZFMK/dwb2portal#freetds))
+The section names in brackets must match with entries in file `/etc/odbc.ini` (see [below](https://github.com/ZFMK/dwb2catalogue/blob/main/README.md#freetds))
 
 
 #### Running the sync_dwb_webportal script
