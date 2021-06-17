@@ -111,11 +111,11 @@ Create a file .my.cnf with the following content and set the credentials, host, 
 
 In `copy_transfer.sh` edit 
 
-line 3 and set the database name of the production database
+ *  line 3 and set the database name of the production database
 
 TARGET_DB='zfmk_coll_db'
 
-line 8 and set the path to the .my.cnf file:
+ *  line 7 and set the path to the .my.cnf file:
 
    DEFAULTS_EXTRA_FILE="/my_path/.my.cnf"
 
