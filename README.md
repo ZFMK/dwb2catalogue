@@ -9,6 +9,16 @@ Documentation on importing Specimens and Taxa from DiversityWorkbench databases 
 4. Index the data imported to the with a solr indexer. The configuration of the solr service is given in [collsolr](https://github.com/ZFMK/collsolr). [dwb2catalogue](https://github.com/ZFMK/dwb2catalogue) calls the solr service to create a new index.
 
 
+## System requirements:
+
+    apt-get install apt-utils \
+    software-properties-common python3-dev \
+    python3-setuptools \
+    python3-pip \
+    unixodbc unixodbc-dev \
+    tdsodbc
+
+
 ## Prerequisites
 
 - One or more DiversityTaxonNames databases are available from which at least one contains a taxonomy that is rooted down to the Animal regnum (optionally you can use the GBIF taxonomy imported into a DiversityTaxonNames instance as described [here](https://github.com/ZFMK/gbif2mysql) and [here](https://github.com/ZFMK/gbif2tnt)
@@ -18,8 +28,8 @@ Documentation on importing Specimens and Taxa from DiversityWorkbench databases 
 
 ### Create Python Virtual Environment:
 
-    python3 -m venv dwb2portal_venv
-    cd dwb2portal_venv
+    python3 -m venv dwb2catalogue_venve
+    cd dwb2catalogue_venv
 
 
 Activate virtual environment:
@@ -39,6 +49,7 @@ Upgrade pip and setuptools
 #### Install the sync_dwb_webportal script
 
     cd dwb2catalogue
+    pip install -r requierements.txt
     python setup.py develop
 
 
