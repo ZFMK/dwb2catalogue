@@ -59,7 +59,7 @@ First insert the credentials and connection parameters for the MySQL database of
     charset = utf8
 
 
-Then edit, add or remove sections for the `DiversityCollection` databases. Each section name must start with `data_source_` in the name to be recognized by the script. Set the projectids as komma separated values to define the projects from which the specimens should be read. The respect_withhold entry defines whether withhold-flags in the database tables should be followed (`true`) or ignored (`false`). Following the withhold flags means, only data that are not flagged for withhold are transfered to the portal database.
+Then edit, add or remove sections for the `DiversityCollection` databases. Each section name must start with `data_source_` in the name to be recognized by the script. Set the projectids as komma separated values to define the projects from which the specimens should be read. The respect_withhold entry defines whether withhold-flags in the database tables should be followed (`true`) or ignored (`false`). Following the withhold flags means, only data that are not flagged for withhold are transfered to the portal database. 
 
 Examples:
 
@@ -77,6 +77,24 @@ Examples:
     analysis_id_methods = 161
     respect_withhold = false
 
+
+You also need to add or remove sections for the `DiversityTaxonNames` databases. Each section name must start with `tnt_` in the name to be recognized by the script. Set the projectids as komma separated values to define the projects from which the taxa should be read. 
+
+Examples:
+
+    [data_source_zfmk]
+    connection = Server=dwb.my_server1.de;DataBase=DiversityCollection_XY;UID=username;PWD=*****;Port=1433
+    project_id = 600-19999
+    analysis_id_tools = 95|110
+    analysis_id_methods = 161
+    respect_withhold = true
+
+    [data_source_gbol]
+    connection = Server=dwb.my_server1.de;DataBase=DiversityCollection_A;UID=username;PWD=******;Port=1433
+    project_id = 20000,203,405
+    analysis_id_tools = 95|110
+    analysis_id_methods = 161
+    respect_withhold = false
 
 
 
