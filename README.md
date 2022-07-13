@@ -1,11 +1,12 @@
 # Import specimen and taxa from DiversityWorkbench databases to Collection Catalogue
 
-Documentation on importing Specimens and Taxa from DiversityWorkbench databases into the collections catalogue. The import requires 3 steps:
+Documentation on importing Specimens and Taxa from DiversityWorkbench databases into the collections catalogue. The import requires 4 steps:
 
 
 1. Merge taxa from different DiversityTaxonNames databases into a common tree for the MySQL database of the collection catalogue.
-2. Import specimen data from different DiversityCollection databases into the MySQL database of the collection catalogue. Check the taxon names applied to the specimens against the entries in the taxon tree and sort out specimens with unknown taxon names. These 2 steps are now done the [sync_dwb_webportal](https://github.com/ZFMK/dwb2portal) script.
-3. Index the data imported to the with a solr indexer. The configuration of the solr service is given in [collsolr](https://github.com/ZFMK/collsolr) .
+2. Import specimen data from different DiversityCollection databases into the MySQL database of the collection catalogue. Check the taxon names applied to the specimens against the entries in the taxon tree and sort out specimens with unknown taxon names. These 2 steps are now done by the [dwb2catalogue](https://github.com/ZFMK/dwb2catalogue) script.
+3. [dwb2catalogue](https://github.com/ZFMK/dwb2catalogue) creates a temporary database with the transfered data. When the transfer has been successfull, the temporary database is copied into the production database.
+4.Index the data imported to the with a solr indexer. The configuration of the solr service is given in [collsolr](https://github.com/ZFMK/collsolr). [dwb2catalogue](https://github.com/ZFMK/dwb2catalogue) calls the solr service to create a new index.
 
 
 ## Prerequisites
@@ -27,10 +28,8 @@ Activate virtual environment:
 
 Upgrade pip and setuptools
 
-    python -m pip install -U pip
-    pip install --upgrade pip setuptools
-
-
+    pip install -U pip
+    pip install -U setuptools
 
 
 #### Clone sync_dwb_webportal from github.com: 
@@ -65,20 +64,23 @@ Then edit, add or remove sections for the `DiversityCollection` databases. Each 
 Examples:
 
     [data_source_zfmk]
-    connection = DSN=DWB@Server1;DataBase=DiversityCollection_XY;UID=username;PWD=*****
+    connection = Server=dwb.my_server1.de;DataBase=DiversityCollection_XY;UID=username;PWD=*****;Port=1433
     project_id = 600-19999
     analysis_id_tools = 95|110
     analysis_id_methods = 161
     respect_withhold = true
 
     [data_source_gbol]
-    connection = DSN=DWB@Server2;DataBase=DiversityCollection_A;UID=username;PWD=******
+    connection = Server=dwb.my_server1.de;DataBase=DiversityCollection_A;UID=username;PWD=******;Port=1433
     project_id = 20000,203,405
     analysis_id_tools = 95|110
     analysis_id_methods = 161
     respect_withhold = false
 
-The section names in brackets must match with entries in file `/etc/odbc.ini` (see [below](https://github.com/ZFMK/dwb2catalogue/blob/main/README.md#freetds))
+
+
+
+
 
 
 #### Running the sync_dwb_webportal script
@@ -87,7 +89,7 @@ run the script in activated environment
 
     python Transfer.py
 
-This script takes about 1.5 hours on a machine with MySQL database on SSD but old AMD FX 6300 CPU. Progress is logged to `syn_dwb2portal.log`
+This script takes about 1.5 hours on a machine with MySQL database on SSD but old AMD FX 6300 CPU. Progress is logged to `sync_dwb2portal.log`
 
 
 
