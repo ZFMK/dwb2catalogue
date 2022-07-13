@@ -1,16 +1,16 @@
 # Import specimen and taxa from DiversityWorkbench databases to Collection Catalogue
 
-Documentation on importing Specimens and Taxa from DiversityWorkbench databases into the collections catalogue. The import requires 3 steps:
+Documentation on importing Specimens and Taxa from DiversityWorkbench databases into the collections catalogue. The import requires 4 steps:
 
 
-1. Merge taxa from different DiversityTaxonNames databases into a common tree for the MySQL database of the collection catalogue. This is done by the [tnt_taxa_merger](https://github.com/ZFMK/tnt_taxa_merger) script.
-2. Import specimen data from different DiversityCollection databases into the MySQL database of the collection catalogue. Check the taxon names applied to the specimens against the entries in the taxon tree and sort out specimens with unknown taxon names. This is done by the [sync_dwb_webportal](https://github.com/ZFMK/dwb2portal) script.
-3. Index the data imported to the with a solr indexer. The configuration of the solr service is given in [collsolr](https://github.com/ZFMK/collsolr) .
+1. Merge taxa from different DiversityTaxonNames databases into a common tree for the MySQL database of the collection catalogue.
+2. Import specimen data from different DiversityCollection databases into the MySQL database of the collection catalogue. Check the taxon names applied to the specimens against the entries in the taxon tree and sort out specimens with unknown taxon names. These 2 steps are now done by the [dwb2catalogue](https://github.com/ZFMK/dwb2catalogue) script.
+3. [dwb2catalogue](https://github.com/ZFMK/dwb2catalogue) creates a temporary database with the transfered data. When the transfer has been successfull, the temporary database is copied into the production database.
+4. Index the data imported to the with a solr indexer. The configuration of the solr service is given in [collsolr](https://github.com/ZFMK/collsolr). [dwb2catalogue](https://github.com/ZFMK/dwb2catalogue) calls the solr service to create a new index.
 
 
 ## Prerequisites
 
-- FreeTDS installed as described [here](https://github.com/ZFMK/dwb2catalogue/blob/main/README.md#freetds) 
 - One or more DiversityTaxonNames databases are available from which at least one contains a taxonomy that is rooted down to the Animal regnum (optionally you can use the GBIF taxonomy imported into a DiversityTaxonNames instance as described [here](https://github.com/ZFMK/gbif2mysql) and [here](https://github.com/ZFMK/gbif2tnt)
 
 
@@ -28,10 +28,8 @@ Activate virtual environment:
 
 Upgrade pip and setuptools
 
-    python -m pip install -U pip
-    pip install --upgrade pip setuptools
-
-
+    pip install -U pip
+    pip install -U setuptools
 
 
 #### Clone sync_dwb_webportal from github.com: 
@@ -61,25 +59,46 @@ First insert the credentials and connection parameters for the MySQL database of
     charset = utf8
 
 
-Then edit, add or remove sections for the `DiversityCollection` databases. Each section name must start with `data_source_` in the name to be recognized by the script. Set the projectids as komma separated values to define the projects from which the specimens should be read. The respect_withhold entry defines whether withhold-flags in the database tables should be followed (`true`) or ignored (`false`). Following the withhold flags means, only data that are not flagged for withhold are transfered to the portal database.
+Then edit, add or remove sections for the `DiversityCollection` databases. Each section name must start with `data_source_` in the name to be recognized by the script. Set the projectids as komma separated values to define the projects from which the specimens should be read. The respect_withhold entry defines whether withhold-flags in the database tables should be followed (`true`) or ignored (`false`). Following the withhold flags means, only data that are not flagged for withhold are transfered to the portal database. 
 
 Examples:
 
     [data_source_zfmk]
-    connection = DSN=DWB@Server1;DataBase=DiversityCollection_XY;UID=username;PWD=*****
+    connection = Server=dwb.my_server1.de;DataBase=DiversityCollection_XY;UID=username;PWD=*****;Port=1433
     project_id = 600-19999
     analysis_id_tools = 95|110
     analysis_id_methods = 161
     respect_withhold = true
 
     [data_source_gbol]
-    connection = DSN=DWB@Server2;DataBase=DiversityCollection_A;UID=username;PWD=******
+    connection = Server=dwb.my_server1.de;DataBase=DiversityCollection_A;UID=username;PWD=******;Port=1433
     project_id = 20000,203,405
     analysis_id_tools = 95|110
     analysis_id_methods = 161
     respect_withhold = false
 
-The section names in brackets must match with entries in file `/etc/odbc.ini` (see [below](https://github.com/ZFMK/dwb2catalogue/blob/main/README.md#freetds))
+
+You also need to add or remove sections for the `DiversityTaxonNames` databases. Each section name must start with `tnt_` in the name to be recognized by the script. Set the projectids as komma separated values to define the projects from which the taxa should be read. 
+
+Examples:
+
+    [data_source_zfmk]
+    connection = Server=dwb.my_server1.de;DataBase=DiversityCollection_XY;UID=username;PWD=*****;Port=1433
+    project_id = 600-19999
+    analysis_id_tools = 95|110
+    analysis_id_methods = 161
+    respect_withhold = true
+
+    [data_source_gbol]
+    connection = Server=dwb.my_server1.de;DataBase=DiversityCollection_A;UID=username;PWD=******;Port=1433
+    project_id = 20000,203,405
+    analysis_id_tools = 95|110
+    analysis_id_methods = 161
+    respect_withhold = false
+
+
+
+
 
 
 #### Running the sync_dwb_webportal script
@@ -88,84 +107,8 @@ run the script in activated environment
 
     python Transfer.py
 
-This script takes about 1.5 hours on a machine with MySQL database on SSD but old AMD FX 6300 CPU. Progress is logged to `syn_dwb2portal.log`
+This script takes about 1.5 hours on a machine with MySQL database on SSD but old AMD FX 6300 CPU. Progress is logged to `sync_dwb2portal.log`
 
-
-
-#### Copying the generated database to the production database
-
-cd to the helper directory
-
-    cd helper
-
-The `copy_transfer.sh` skript copies the database generated by `Transfer.py` into the production database of the portal. Therefore, it needs access to the mysql database. 
-
-Create a file .my.cnf with the following content and set the credentials, host, port there:
-
-    [client]
-    user = 
-    password = 
-    host = localhost
-    port = 3306
-
-
-In `copy_transfer.sh` edit 
-
- line 3 and set the database name of the production database
-
-     TARGET_DB='zfmk_coll_db'
-
- line 7 and set the path to the .my.cnf file:
-
-    DEFAULTS_EXTRA_FILE="/my_path/.my.cnf"
-
-Run `copy_transfer.sh` with
-
-    bash copy_transfer.sh
-
-
-
-----
-
-## FreeTDS
-
-Download and install FreeTDS driver for SQL-Server Database
-
-    wget ftp://ftp.freetds.org/pub/freetds/stable/freetds-1.2.18.tar.gz
-    tar -xf freetds-1.2.18.tar.gz
-    cd freetds-1.2.18
-    ./configure --prefix=/usr --sysconfdir=/etc --with-unixodbc=/usr --with-tdsver=7.2
-    make
-    sudo make install
-
-Setup odbc-driver and config
-
-Create file `tds.driver.template` with content:
-
-    [FreeTDS]
-    Description = v0.82 with protocol v8.0
-    Driver = /usr/lib/libtdsodbc.so
-
-
-Register driver
-
-    sudo odbcinst -i -d -f tds.driver.template
-
-Create entry in `/etc/odbc.ini` 
-
-    [DWB@Server1] 
-    Driver=FreeTDS
-    TDS_Version=7.2
-    APP=Some meaningful appname
-    Description=DWB SQL DWB Server
-    Server=<some TaxonNames Server>
-    Port=<port>
-    Database=<a TaxonNames database>
-    QuotedId=Yes
-    AnsiNPW=Yes
-    Mars_Connection=No
-    Trusted_Connection=Yes
-    client charset = UTF-8
 
 
 
