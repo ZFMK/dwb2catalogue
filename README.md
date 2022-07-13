@@ -49,7 +49,7 @@ Upgrade pip and setuptools
 #### Install the sync_dwb_webportal script
 
     cd dwb2catalogue
-    pip install -r requierements.txt
+    pip install -r requirements.txt
     python setup.py develop
 
 
@@ -118,7 +118,13 @@ run the script in activated environment
 
     python Transfer.py
 
-This script takes about 1.5 hours on a machine with MySQL database on SSD but old AMD FX 6300 CPU. Progress is logged to `sync_dwb2portal.log`
+
+Progress can be followed with:
+
+    tail -f sync_dwb2portal.log
+
+
+This script takes about 1.5 hours on a machine with MySQL database on SSD but old AMD FX 6300 CPU.
 
 
 
