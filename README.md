@@ -6,7 +6,7 @@ Documentation on importing Specimens and Taxa from DiversityWorkbench databases 
 1. Merge taxa from different DiversityTaxonNames databases into a common tree for the MySQL database of the collection catalogue.
 2. Import specimen data from different DiversityCollection databases into the MySQL database of the collection catalogue. Check the taxon names applied to the specimens against the entries in the taxon tree and sort out specimens with unknown taxon names. These 2 steps are now done by the [dwb2catalogue](https://github.com/ZFMK/dwb2catalogue) script.
 3. [dwb2catalogue](https://github.com/ZFMK/dwb2catalogue) creates a temporary database with the transfered data. When the transfer has been successfull, the temporary database is copied into the production database.
-4.Index the data imported to the with a solr indexer. The configuration of the solr service is given in [collsolr](https://github.com/ZFMK/collsolr). [dwb2catalogue](https://github.com/ZFMK/dwb2catalogue) calls the solr service to create a new index.
+4. Index the data imported to the with a solr indexer. The configuration of the solr service is given in [collsolr](https://github.com/ZFMK/collsolr). [dwb2catalogue](https://github.com/ZFMK/dwb2catalogue) calls the solr service to create a new index.
 
 
 ## Prerequisites
