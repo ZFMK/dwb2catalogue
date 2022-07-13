@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
-from configparser import ConfigParser
+from configparser import ConfigParser, NoOptionError
 import re
 import pudb
 
@@ -23,6 +23,8 @@ class ConfigReader():
 		self.readStaticParameters()
 		self.readTargetDBParameters()
 		self.readDataSourceParameters()
+		self.readTaxaMergerDBParameters()
+		self.readTNTSourceParameters()
 
 
 	def readStaticParameters(self):
@@ -43,14 +45,15 @@ class ConfigReader():
 		if self.config.has_option('option', 'db_suffix'):
 			self.db_suffix = self.config.get('option', 'db_suffix')
 		
-		self.taxamergerdb = self.config.get('TaxaMergerDB', 'db')
-		
-	
-	
-	def getTaxaMergerDBName(self):
-		return self.taxamergerdb
-	
-	
+		if self.config.has_option('option', 'use_gbif_taxa'):
+			self.use_gbif_taxa = self.config.getboolean('option', 'use_gbif_taxa')
+			if self.use_gbif_taxa is True:
+				self.gbif_db = self.config.get('GBIF_DB', 'db')
+				self.gbif_taxa_table = self.config.get('GBIF_DB', 'table')
+		else:
+			self.use_gbif_taxa = False
+		return
+
 
 	def readTargetDBParameters(self):
 		# target db is selected indirectly via [option] project section in config,
@@ -116,8 +119,57 @@ class ConfigReader():
 		for config in self.data_sources:
 			if config.data_source_name == data_source_name:
 				return config
-			 
+		return 
+
+
+	def readTaxaMergerDBParameters(self):
+		self.taxadb_config = {
+			'db': self.config.get('taxamergerdb', 'db'),
+			'user': self.config.get('taxamergerdb', 'user'),
+			'passwd': self.config.get('taxamergerdb', 'passwd')
+			}
 		
+		try:
+			self.taxadb_config['host'] = self.config.get('taxamergerdb', 'host')
+		except NoOptionError:
+			self.taxadb_config['host'] = 'localhost'
+		
+		try:
+			self.taxadb_config['port'] = self.config.get('taxamergerdb', 'port')
+		except NoOptionError:
+			self.taxadb_config['port'] = 3306
+		
+		try:
+			self.taxadb_config['charset'] = self.config.get('taxamergerdb', 'charset')
+		except NoOptionError:
+			self.taxadb_config['charset'] = 'utf8'
+		
+		self.taxadb_name = self.taxadb_config['db']
+
+
+	def getTaxaMergerDBName(self):
+		return self.taxadb_name
+
+
+	def getTaxaMergerDBConfig(self):
+		return self.taxadb_config
+
+
+	def readTNTSourceParameters(self):
+		'''
+		assign all necessary config values depending on a data source
+		'''
+		self.tnt_sources = []
+		sections = self.config.sections()
+		for section in sections:
+			if section[:4]=='tnt_' and section!='tnt_test':
+				tnt_source = {}
+				tnt_source['name'] = section
+				tnt_source['connection'] = self.config.get(section, 'connection')
+				tnt_source['dbname'] = self.config.get(section, 'dbname')
+				tnt_source['projectids'] = [projectid.strip() for projectid in self.config.get(section, 'projectids').split(',')]
+				self.tnt_sources.append(tnt_source)
+		return
 
 
 class DataSourceDefinition():
@@ -145,9 +197,16 @@ class DataSourceDefinition():
 		else:
 			self.institute_id = None
 		
+		self.collection_id_string = None
+		self.project_id_string = None
 		
-		self.project_id_string = self.__parse2sql(config.get(self.data_source_name, 'project_id'))
-		self.project_id_string = self.project_id_string.format('p.ProjectID')
+		if config.has_option(self.data_source_name, 'collection_id'):
+			self.collection_id_string = self.__parse2sql(config.get(self.data_source_name, 'collection_id'))
+			self.collection_id_string = self.collection_id_string.format('s.CollectionID')
+		
+		else:
+			self.project_id_string = self.__parse2sql(config.get(self.data_source_name, 'project_id'))
+			self.project_id_string = self.project_id_string.format('p.ProjectID')
 		
 		self.combined_analysis = []
 		if config.has_option(self.data_source_name, 'analysis_id_tools'):
@@ -168,6 +227,10 @@ class DataSourceDefinition():
 			self.respect_withhold = config.getboolean(self.data_source_name, 'respect_withhold')
 		else: 
 			self.respect_withhold = True
+		if config.has_option(self.data_source_name, 'mark_specimen_withhold'):
+			self.mark_specimen_withhold = config.getboolean(self.data_source_name, 'mark_specimen_withhold')
+		else: 
+			self.mark_specimen_withhold = True
 
 
 	def __parse2sql(self, c):

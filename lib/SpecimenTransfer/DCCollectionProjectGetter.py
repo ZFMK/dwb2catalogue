@@ -11,14 +11,13 @@ from .DCGetter import DCGetter
 
 
 class DCCollectionProjectGetter(DCGetter):
-	def __init__(self, data_source_name, globalconfig, datasourceid):
-		DCGetter.__init__(self, data_source_name, globalconfig)
-		self.datasourceid = datasourceid
+	def __init__(self, dc_db, data_source_name, globalconfig, datasourceid):
+		DCGetter.__init__(self, dc_db, data_source_name, globalconfig, datasourceid)
 		
-		self.pagesize = 1000
+		self.pagesize = 10000
 		
-		self.temptable = "#ProjectTempTable"
-		self.createProjectTempTable()
+		self.temptable = "#CollectionProjectTempTable"
+		self.createCollectionProjectTempTable()
 		self.setMaxPage()
 		
 	
@@ -30,17 +29,20 @@ class DCCollectionProjectGetter(DCGetter):
 	
 	
 
-	def createProjectTempTable(self):
+	def createCollectionProjectTempTable(self):
 		
+		'''
+		# not needed because restriction is set during creation of self.transfer_ids_temptable
 		if self.respect_withhold is True:
 			withholdclause = """
-			AND (
+			WHERE (
 			(iu.[DataWithholdingReason] IS NULL OR iu.[DataWithholdingReason] = '')
 			AND (s.[DataWithholdingReason] IS NULL OR s.[DataWithholdingReason] = '')
 			)
 			"""
 		else:
 			withholdclause = ""
+		'''
 		
 		query = """SELECT
 				IDENTITY (INT) as rownumber, -- set an IDENTITY column that can be used for paging
@@ -50,13 +52,14 @@ class DCCollectionProjectGetter(DCGetter):
 				p.ProjectID
 			INTO [{1}]
 			FROM IdentificationUnit iu
+				INNER JOIN [{2}] ids_temp
+					ON (ids_temp.CollectionSpecimenID = iu.CollectionSpecimenID AND ids_temp.IdentificationUnitID = iu.IdentificationUnitID)
 				INNER JOIN CollectionProject p on p.CollectionSpecimenID=iu.CollectionSpecimenID
 				INNER JOIN CollectionSpecimen s ON s.CollectionSpecimenID=iu.CollectionSpecimenID
-			WHERE {2} {3}
 			GROUP BY iu.CollectionSpecimenID, iu.IdentificationUnitID, p.ProjectID
 			ORDER BY iu.CollectionSpecimenID,
 				iu.IdentificationUnitID
-			;""".format(self.datasourceid, self.temptable, self.project_id_string, withholdclause)
+			;""".format(self.datasourceid, self.temptable, self.transfer_ids_temptable)
 		log_query.info("\nCollection_Projects:\n\t%s" % query)
 		
 		

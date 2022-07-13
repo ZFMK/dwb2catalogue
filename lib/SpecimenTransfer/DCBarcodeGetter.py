@@ -11,9 +11,8 @@ from .DCGetter import DCGetter
 
 
 class DCBarcodeGetter(DCGetter):
-	def __init__(self, data_source_name, globalconfig, datasourceid):
-		DCGetter.__init__(self, data_source_name, globalconfig)
-		self.datasourceid = datasourceid
+	def __init__(self, dc_db, data_source_name, globalconfig, datasourceid):
+		DCGetter.__init__(self, dc_db, data_source_name, globalconfig, datasourceid)
 		
 		self.pagesize = 1000
 		
@@ -68,10 +67,12 @@ class DCBarcodeGetter(DCGetter):
 					SELECT iu.RowGUID,
 						CASE WHEN (s.DataWithholdingReason='' OR s.DataWithholdingReason IS NULL) THEN 0 ELSE 1 END AS withhold
 					FROM IdentificationUnitAnalysis iu
-						INNER JOIN CollectionProject p ON p.CollectionSpecimenID=iu.CollectionSpecimenID
+						INNER JOIN [{2}] ids_temp
+							ON (ids_temp.CollectionSpecimenID = iu.CollectionSpecimenID AND ids_temp.IdentificationUnitID = iu.IdentificationUnitID)
+						 -- INNER JOIN CollectionProject p ON p.CollectionSpecimenID=iu.CollectionSpecimenID
 						INNER JOIN IdentificationUnit iu2 ON iu2.IdentificationUnitID = iu.IdentificationUnitID
 						LEFT JOIN CollectionSpecimen s ON s.CollectionSpecimenID=iu.CollectionSpecimenID
-					WHERE ({3}) and ({2}) {4}
+					WHERE ({3}) {4}
 					GROUP BY iu.RowGUID, s.DataWithholdingReason
 				) AS a
 					INNER JOIN IdentificationUnitAnalysis iua ON (a.RowGUID=iua.RowGUID)
@@ -83,7 +84,7 @@ class DCBarcodeGetter(DCGetter):
 						AND iuamp.MethodID=12 AND iuamp.ParameterID=62)
 					OUTER APPLY
 						iua.ToolUsage.nodes( '/Tools/Tool[@Name="Barcoding"]/Usage[@Name="locus"]' ) AS p1(t)
-			""".format(self.datasourceid, self.temptable, self.project_id_string, self.analysis_id_combined_string, withholdclause)
+			""".format(self.datasourceid, self.temptable, self.transfer_ids_temptable, self.analysis_id_combined_string, withholdclause)
 		log_query.info("\nSpecimen Barcode:\n\t%s" % selectquery)
 		
 		

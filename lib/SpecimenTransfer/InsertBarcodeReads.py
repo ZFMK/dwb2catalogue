@@ -42,9 +42,20 @@ class InsertBarcodeReads(DBInsert):
 			self.cur.execute(self.addunitkey)
 			self.con.commit()
 			
+			self.cur.execute(self.addsourcekey)
+			self.con.commit()
+			
+			self.cur.execute(self.addanalysisidkey)
+			self.con.commit()
+			
+			self.cur.execute(self.addanalysisnumberkey)
+			self.con.commit()
+			
+			#logger.info('filling temporary table with barcode reads')
 			self.cur.execute(self.filltemptable, self.values)
 			self.con.commit()
 			
+			#logger.info('fill table with barcode reads')
 			self.cur.execute(self.dataquery)
 			self.con.commit()
 			
@@ -65,6 +76,15 @@ class InsertBarcodeReads(DBInsert):
 		;""".format(self.db_suffix)
 		
 		self.addunitkey = """ALTER TABLE `{0}_Barcode_Reads_Temp` ADD KEY bct_unit_idx (`IdentificationUnitID`)
+		;""".format(self.db_suffix)
+		
+		self.addsourcekey = """ALTER TABLE `{0}_Barcode_Reads_Temp` ADD KEY bct_source_idx (`DatasourceID`)
+		;""".format(self.db_suffix)
+		
+		self.addanalysisidkey = """ALTER TABLE `{0}_Barcode_Reads_Temp` ADD KEY bct_analysisid_idx (`analysis_id`)
+		;""".format(self.db_suffix)
+		
+		self.addanalysisnumberkey = """ALTER TABLE `{0}_Barcode_Reads_Temp` ADD KEY bct_analysisnumber_idx (`analysis_number`)
 		;""".format(self.db_suffix)
 		
 		

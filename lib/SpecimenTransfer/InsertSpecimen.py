@@ -40,7 +40,7 @@ class InsertSpecimen(DBInsert):
 			self.setValuesFromLists(self.data)
 			
 			query = """
-			INSERT INTO `{0}_Specimen` (`DataSourceID`, `CollectionSpecimenID`, `IdentificationUnitID`, `taxon_id`, `taxon`, `FamilyCache`, `barcode`, `AccDate`, `AccessionNumber`)
+			INSERT INTO `{0}_Specimen` (`DataSourceID`, `CollectionSpecimenID`, `IdentificationUnitID`, `taxon_id`, `taxon`, `FamilyCache`, `barcode`, `AccDate`, `AccessionNumber`, `withhold_flagg`)
 			VALUES {1}
 			;""".format(self.config.db_suffix, self.placeholderstring)
 			
@@ -69,7 +69,7 @@ class InsertSpecimen(DBInsert):
 			self.setValuesFromLists(self.data)
 			
 			query = """
-			INSERT INTO `specimentemptable` (`DataSourceID`, `CollectionSpecimenID`, `IdentificationUnitID`, `taxon_id`, `taxon`, `FamilyCache`, `barcode`, `AccDate`, `AccessionNumber`)
+			INSERT INTO `specimentemptable` (`DataSourceID`, `CollectionSpecimenID`, `IdentificationUnitID`, `taxon_id`, `taxon`, `FamilyCache`, `barcode`, `AccDate`, `AccessionNumber`, `withhold_flagg`)
 			VALUES {0}
 			;""".format(self.placeholderstring)
 			
@@ -79,8 +79,8 @@ class InsertSpecimen(DBInsert):
 			self.data = self.specimengetter.getNextDataPage()
 		
 		query = """
-		INSERT INTO `{0}_Specimen` (`DataSourceID`, `CollectionSpecimenID`, `IdentificationUnitID`, `taxon_id`, `taxon`, `FamilyCache`, `barcode`, `AccDate`, `AccessionNumber`)
-		SELECT st.`DataSourceID`, st.`CollectionSpecimenID`, st.`IdentificationUnitID`, st.`taxon_id`, st.`taxon`, st.`FamilyCache`, st.`barcode`, st.`AccDate`, st.`AccessionNumber`
+		INSERT INTO `{0}_Specimen` (`DataSourceID`, `CollectionSpecimenID`, `IdentificationUnitID`, `taxon_id`, `taxon`, `FamilyCache`, `barcode`, `AccDate`, `AccessionNumber`, `withhold_flagg`)
+		SELECT st.`DataSourceID`, st.`CollectionSpecimenID`, st.`IdentificationUnitID`, st.`taxon_id`, st.`taxon`, st.`FamilyCache`, st.`barcode`, st.`AccDate`, st.`AccessionNumber`, st.`withhold_flagg`
 		FROM `specimentemptable` st 
 		LEFT JOIN `{0}_Specimen` s2 ON (st.`CollectionSpecimenID` = s2.`CollectionSpecimenID` AND st.`AccessionNumber` = s2.`AccessionNumber`)
 		WHERE s2.CollectionSpecimenID IS NULL
@@ -88,6 +88,21 @@ class InsertSpecimen(DBInsert):
 		
 		self.cur.execute(query)
 		self.con.commit()
+		
+		# update the withhold flagg when data comming from different sources and the last source has less restrictions
+		query = """
+		 -- update the withhold_flaggs for specimen from zfmk and gbol. gbol will always have withhold_flagg 0 and the lesser restriction is what counts
+		UPDATE `{0}_Specimen` cs
+		INNER JOIN `specimentemptable` st
+		ON (st.`CollectionSpecimenID` = cs.`CollectionSpecimenID` AND st.`AccessionNumber` = cs.`AccessionNumber`)
+		set cs.withhold_flagg = 0
+		WHERE st.withhold_flagg = 0
+		;""".format(self.config.db_suffix)
+		
+		self.cur.execute(query)
+		self.con.commit()
+		
+		return
 		
 	
 

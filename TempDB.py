@@ -13,7 +13,7 @@ import pudb
 from datetime import datetime
 from collections import OrderedDict
 
-from lib.MySQLConnector import MySQLConnector
+from DBConnectors.MySQLConnector import MySQLConnector
 
 class TempDB():
 	def __init__(self, globalconfig):
@@ -93,7 +93,7 @@ class TempDB():
 
 	def create_temp_scheme(self):
 		""" Original in biocase_media/Transfer2/transfer_sql.py """
-		q2 = """create database `%s` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;""" % self.temp_db_name
+		q2 = """create database `%s` CHARACTER SET utf8mb4;""" % self.temp_db_name
 		q7 = """use `{0}`""".format(self.temp_db_name)
 
 		self.execute(q2)
@@ -127,7 +127,6 @@ class CreateTableQueries():
 		res_a = OrderedDict()
 		res_a['Datasources'] = self.Datasources
 		res_a['TaxonomySources'] = self.TaxonomySources
-		res_a['TaxonomySourcesInsertRootTaxonomy'] = self.TaxonomySourcesInsertRootTaxonomy
 		res_a['Institutes'] = self.Institutes
 		res_a['Specimen'] = self.Specimen
 		res_a['Data_Category'] = self.Data_Category
@@ -135,22 +134,17 @@ class CreateTableQueries():
 		res_a['Data'] = self.Data
 		res_a['Data2Specimen'] = self.Data2Specimen
 		res_a['Geo'] = self.Geo
-		res_a['CollectionProjects'] = self.CollectionProjects
+		res_a['Project'] = self.Project
+		res_a['CollectionProject'] = self.CollectionProject
+		res_a['ProjectUser'] = self.ProjectUser
 		res_a['Barcode'] = self.Barcode
 		res_a['Barcode_Reads'] = self.Barcode_Reads
 		res_a['Taxa'] = self.Taxa
-		res_a['TaxaMergeTable'] = self.TaxaMergeTable
-		res_a['TaxaMergeTableInsertRootTaxa'] = self.TaxaMergeTableInsertRootTaxa
-		res_a['TaxaMergeRelationTable'] = self.TaxaMergeRelationTable
 		res_a['TaxaSynonyms'] = self.TaxaSynonyms
-		res_a['TaxaSynonymsMergeTable'] = self.TaxaSynonymsMergeTable
 		res_a['TaxonomicRanksEnum'] = self.TaxonomicRanksEnum
-		res_a['insertTaxonomicRanksEnum'] = self.insertTaxonomicRanksEnum
-		res_a['TaxaCommonNamesTempTable'] = self.TaxaCommonNamesTempTable
 		res_a['TaxaCommonNames'] = self.TaxaCommonNames
 		res_a['TaxaPropertyTerms'] = self.TaxaPropertyTerms
-		res_a['TaxaPropertyTermsFillFixedValues'] = self.TaxaPropertyTermsFillFixedValues
-		res_a['TaxaRedListTempTable'] = self.TaxaRedListTempTable
+		#res_a['TaxaPropertyTermsFillFixedValues'] = self.TaxaPropertyTermsFillFixedValues
 		res_a['TaxaRedList'] = self.TaxaRedList
 		res_a['TaxaFlat'] = self.TaxaFlat
 		res_a['Media'] = self.Media
@@ -160,7 +154,6 @@ class CreateTableQueries():
 			yield (table_name, query)
 
 
-	
 	def Datasources(self):
 		q = """CREATE TABLE `{0}_Datasources` (
 			`DatasourceID` INT(10) NOT NULL AUTO_INCREMENT,
@@ -277,6 +270,7 @@ class CreateTableQueries():
 		`withhold` varchar(50) DEFAULT NULL,
 		`AccDate` DATETIME DEFAULT NULL,
 		`AccessionNumber` varchar(255) COMMENT 'copied here for easier access, otherwise it is in _Data table',
+		`withhold_flagg` BOOLEAN,
 		PRIMARY KEY (`id`),
 		UNIQUE KEY `origin` (`DatasourceID`, `CollectionSpecimenID`, `IdentificationUnitID`),
 		KEY `taxon_id` (`taxon_id`),
@@ -295,13 +289,6 @@ class CreateTableQueries():
 			UNIQUE KEY (`taxonomy_source_name`)
 			) DEFAULT CHARSET=utf8mb4""".format(self.db_suffix)
 		return q
-
-	def TaxonomySourcesInsertRootTaxonomy(self):
-		return """
-		INSERT INTO `{0}_TaxonomySources` (`TaxonomySourceID`, `taxonomy_source_name`)
-		VALUES ('0', 'TaxonomySource for root taxa generated from code')
-		;
-		""".format(self.db_suffix)
 
 	def Taxa(self):
 		return """CREATE TABLE `{0}_Taxa` (
@@ -328,64 +315,7 @@ class CreateTableQueries():
 		key `idx_rank_code` (`rank_code` ASC),
 		KEY `scientificName` (`scientificName`)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='All taxa from tnt.diversityworkbench.de'""".format(self.db_suffix)
-	
-	def TaxaMergeTable(self):
-		return """CREATE TABLE `{0}_TaxaMergeTable` (
-		`id` int(10) NOT NULL AUTO_INCREMENT,
-		`SourceTaxonID` int(10) NOT NULL,
-		`TaxonomySourceID` int(10) NOT NULL,
-		`SourceParentTaxonID` int(10) DEFAULT NULL,
-		`SourceProjectID` int(10) NOT NULL DEFAULT 0,
-		`taxon` varchar(255) NOT NULL,
-		`author` varchar(255) DEFAULT NULL,
-		`parent_taxon` varchar(255),
-		`rank` varchar(25) NOT NULL,
-		`parent_id` int(10) unsigned DEFAULT NULL,
-		`rank_code` int(10) NOT NULL DEFAULT 0,
-		`scientificName` varchar(255),
-		`matched_in_specimens` BOOLEAN DEFAULT 0,
-		`name_doubles` TINYINT(1) DEFAULT 0, -- 1 as marker for doubles with same parent taxon, 2 as marker for doubles with different parent taxon
-		PRIMARY KEY (`id`),
-		UNIQUE KEY `origin` (`SourceTaxonID`, `TaxonomySourceID`, `SourceParentTaxonID`, SourceProjectID),
-		KEY `parent_id` (`parent_id`),
-		KEY `taxon` (`taxon`),
-		KEY `parent_taxon` (`parent_taxon`),
-		KEY `rank` (`rank`),
-		KEY `idx_rank_code` (`rank_code` ASC),
-		KEY `scientificName` (`scientificName`),
-		KEY `matched_in_specimens` (`matched_in_specimens`),
-		KEY `name_doubles` (name_doubles)
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-		;""".format(self.db_suffix)
-	
-	def TaxaMergeTableInsertRootTaxa(self):
-		return """
-		INSERT INTO `{0}_TaxaMergeTable` (`id`, `parent_id`, `SourceTaxonID`, `TaxonomySourceID`, `SourceParentTaxonID`, `taxon`, `rank`, `parent_taxon`)
-		VALUES (1, NULL, 1, 0, NULL, 'root', 'root', NULL),
-		(2, 1, 2, 0, 1, 'Animalia', 'reg.', 'root'),
-		(3, 1, 3, 0, 1, 'Plantae', 'reg.', 'root'),
-		(4, 1, 4, 0, 1, 'Fungi', 'reg.', 'root')
-		;
-		""".format(self.db_suffix)
 
-	
-	def TaxaMergeRelationTable(self):
-		return """CREATE TABLE `{0}_TaxaMergeRelationTable` (
-		`id` int(10) NOT NULL AUTO_INCREMENT,
-		`AncestorID` INT(10) NOT NULL, -- SourceTaxonID calculated from SourceTaxonID and SourceParentTaxonID relations
-		`DescendantID` INT(10) NOT NULL, -- SourceTaxonID calculated from SourceTaxonID and SourceParentTaxonID relations
-		`PathLength` INT(10),
-		`TaxonomySourceID` int(10) NOT NULL,
-		`SourceProjectID` int(10) DEFAULT NULL,
-		PRIMARY KEY (`id`),
-		KEY (`AncestorID`),
-		KEY (`DescendantID`),
-		KEY (`PathLength`),
-		KEY (`TaxonomySourceID`),
-		KEY (`SourceProjectID`)
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-		;""".format(self.db_suffix)
-	
 	def TaxonomicRanksEnum(self):
 		return """CREATE TABLE `{0}_TaxonomicRanksEnum` (
 		`rank` varchar(255),
@@ -394,7 +324,6 @@ class CreateTableQueries():
 		PRIMARY KEY (`rank_code`)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 		;""".format(self.db_suffix)
-	
 
 	def TaxaFlat(self):
 		return """CREATE TABLE `{0}_TaxaFlat` (
@@ -457,29 +386,6 @@ class CreateTableQueries():
 		PRIMARY KEY (`taxon_id`)
 		) ENGINE=InnoDB DEFAULT CHARSET=UTF8 COMMENT='Flat data representation of {0}_Taxa'""".format(self.db_suffix)
 
-	def TaxaSynonymsMergeTable(self):
-		return """CREATE TABLE `{0}_TaxaSynonymsMergeTable` (
-		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-		`SourceTaxonID` int(10) NOT NULL,
-		`TaxonomySourceID` int(10) NOT NULL,
-		`SourceProjectID` int(10) NOT NULL DEFAULT 0,
-		`SourceAcceptedTaxonID`  int(10) NOT NULL,
-		`taxon_id` int unsigned COMMENT 'the taxon-id of the synonym',
-		`syn_taxon_id` int unsigned COMMENT 'the taxon-id of the accepted name in _Taxa table',
-		`taxon` varchar(255) NOT NULL,
-		`author` varchar(255) DEFAULT NULL,
-		`rank` varchar(25) NOT NULL,
-		`accepted_taxon` varchar(255) DEFAULT NULL, -- will be filled later in InsertSynonyms
-		PRIMARY KEY (`id`),
-		UNIQUE KEY `origin` (`SourceTaxonID`, `TaxonomySourceID`, `SourceProjectID`, `SourceAcceptedTaxonID`),
-		KEY `taxon_id` (`taxon_id`),
-		KEY `syn_taxon_id` (`syn_taxon_id`),
-		KEY `taxon` (`taxon`),
-		KEY `rank` (`rank`),
-		KEY `accepted_taxon` (accepted_taxon)
-		) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4""".format(self.db_suffix)
-
-
 	def TaxaSynonyms(self):
 		return """CREATE TABLE `{0}_TaxaSynonyms` (
 		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -493,20 +399,6 @@ class CreateTableQueries():
 		KEY `syn_taxon_id` (`syn_taxon_id`),
 		KEY `name` (`taxon`)
 		) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='Synonyms from tnt.diversityworkbench.de'""".format(self.db_suffix)
-
-	def TaxaCommonNamesTempTable(self):
-		return """CREATE TABLE `{0}_TaxaCommonNamesTempTable` (
-		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-		`SourceTaxonID` int(10) NOT NULL,
-		`TaxonomySourceID` int(10) NOT NULL,
-		`SourceProjectID` int(10) NOT NULL DEFAULT 0,
-		`name` varchar(255) NOT NULL,
-		`code` varchar(2) NOT NULL DEFAULT 'de',
-		`db_name` varchar(50) NOT NULL,
-		PRIMARY KEY (`id`),
-		KEY `name` (`name`)
-		) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='Common taxon names from tnt.diversityworkbench.de'""".format(self.db_suffix)
-
 
 	def TaxaCommonNames(self):
 		return """CREATE TABLE `{0}_TaxaCommonNames` (
@@ -529,6 +421,7 @@ class CreateTableQueries():
 		PRIMARY KEY (`id`)
 		) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='Terms for taxon properties'""".format(self.db_suffix)
 
+	'''
 	def TaxaPropertyTermsFillFixedValues(self):
 		#fixed values because of portal software
 		#this must be reworked
@@ -548,21 +441,7 @@ class CreateTableQueries():
 		(35, 'Verantwortlichkeit', 'rl_category', 'de')
 		;
 		""".format(self.db_suffix)
-	
-	def TaxaRedListTempTable(self):
-		return """CREATE TABLE `{0}_TaxaRedListTempTable` (
-		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-		`SourceTaxonID` int(10) NOT NULL,
-		`TaxonomySourceID` int(10) NOT NULL,
-		`value` varchar(50) NOT NULL,
-		`term` varchar(50),
-		`reference` varchar(800),
-		`category_id` int(10),
-		`reference_id` int(10),
-		PRIMARY KEY (`id`),
-		KEY `category_id` (`category_id`),
-		KEY `reference_id` (`reference_id`)
-		) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COMMENT='Red list values from TNT Analysis'""".format(self.db_suffix)
+	'''
 
 	def TaxaRedList(self):
 		return """CREATE TABLE `{0}_TaxaRedLists` (
@@ -582,8 +461,8 @@ class CreateTableQueries():
 		`institute_id` int(10) unsigned NOT NULL auto_increment,
 		`ExternalDatasourceID` int(10) NOT NULL,
 		`DatasourceID` int(10) NOT NULL,
-		`project_institute` varchar(50) NOT NULL,
-		`project_name` varchar(50) NULL,
+		`project_institute` varchar(255) NOT NULL,
+		`project_name` varchar(255) NULL,
 		`institute_short` varchar(80) NULL,
 		`institute_name` varchar(255) NULL,
 		PRIMARY KEY (`institute_id`),
@@ -591,12 +470,51 @@ class CreateTableQueries():
 		KEY (`DatasourceID`)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Institutes from CollectionExternalDatasource'""".format(self.db_suffix)
 
-	def CollectionProjects(self):
-		return """CREATE TABLE `{0}_CollectionProjects` (
+	def Project(self):
+		query = """
+		CREATE TABLE `{0}_Project` (
+		`id` INT(10) NOT NULL AUTO_INCREMENT,
+		`ProjectID` INT(10) NOT NULL,
+		`DatasourceID` INT(10) NOT NULL,
+		`Project` VARCHAR(50),
+		`ProjectURI` VARCHAR(255),
+		PRIMARY KEY(`id`),
+		KEY(`ProjectID`, `DatasourceID`), 
+		KEY(`ProjectID`),
+		KEY(`DatasourceID`)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+		;""".format(self.db_suffix)
+		return query
+
+	def ProjectUser(self):
+		query = """
+		 -- project_id is the new assigned id for project from the different Datasources, referencing to id in ZFMK_Coll_Project, ProjectID is the original ProjectID within the Datasource
+		CREATE TABLE `{0}_ProjectUser` (
+		`project_id` INT(10),
+		`LoginName` VARCHAR(255),
+		`ProjectID` INT(10) NOT NULL,
+		`DatasourceID` INT(10) NOT NULL,
+		ReadOnly BOOLEAN,
+		PRIMARY KEY(project_id, LoginName),
+		KEY(`project_id`),
+		KEY(LoginName),
+		KEY (ProjectID),
+		KEY (DatasourceID),
+		FOREIGN KEY (ProjectID, DatasourceID) REFERENCES `{0}_Project` (`ProjectID`, DatasourceID)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+		;""".format(self.db_suffix)
+		return query
+
+	def CollectionProject(self):
+		return """CREATE TABLE `{0}_CollectionProject` (
 		`specimen_id` int(10) unsigned NOT NULL,
-		`project_id` int(10) unsigned NOT NULL,
+		`ProjectID` int(10) NOT NULL,
+		`DatasourceID` INT(10) NOT NULL,
+		KEY (`specimen_id`),
+		KEY (`ProjectID`),
+		KEY (`DatasourceID`),
 		FOREIGN KEY (`specimen_id`) REFERENCES `{0}_Specimen` (`id`),
-		KEY (`project_id`)
+		FOREIGN KEY (`ProjectID`, DatasourceID) REFERENCES `{0}_Project` (`ProjectID`, DatasourceID)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""".format(self.db_suffix)
 
 	def Media(self):
@@ -834,68 +752,4 @@ class CreateTableQueries():
 				""".format(self.db_suffix)}
 		for (table_name, query) in iter(queries.items()):
 			yield (table_name, query) #.replace('\n',' ').replace('\t',''))
-	
-	
-	def insertTaxonomicRanksEnum(self):
-		return """
-		INSERT INTO {0}_TaxonomicRanksEnum
-		VALUES
-		("agg.", 191),
-		("aggr.", 190),
-		("biovar.", 100),
-		("cand.", 10),
-		("cl.", 420),
-		("convar.", 120),
-		("cult.", 110),
-		("cultivar. group", 130),
-		("dom.", 520),
-		("f.", 60),
-		("f. sp.", 30),
-		("fam.", 340),
-		("gen.", 270),
-		("graft-chimaera", 140),
-		("grex", 165),
-		("infracl.", 400),
-		("infrafam.", 320),
-		("infragen.", 250),
-		("infraord.", 360),
-		("infraphyl./div.", 440),
-		("infrareg.", 480),
-		("infrasp.", 150),
-		("infratrib.", 280),
-		("ord.", 380),
-		("pathovar.", 90),
-		("phyl./div.", 460),
-		("reg.", 500),
-		("sect.", 240),
-		("ser.", 220),
-		("sp.", 170),
-		("sp. group", 180),
-		("subcl.", 410),
-		("subfam.", 330),
-		("subfm.", 50),
-		("subgen.", 260),
-		("subord.", 370),
-		("subphyl./div.", 450),
-		("subreg.", 490),
-		("subsect.", 230),
-		("subser.", 210),
-		("subsp.", 160),
-		("subsubfm.", 40),
-		("subtrib.", 290),
-		("subvar.", 70),
-		("supercl.", 430),
-		("superfam.", 350),
-		("superord.", 390),
-		("superphyl./div.", 470),
-		("superreg.", 510),
-		("supertrib.", 310),
-		("tax. infragen.", 200),
-		("tax. infrasp.", 20),
-		("tax. supragen.", 530),
-		("trib.", 300),
-		("var.", 80)
-		;""".format(self.db_suffix)
-		
-		
 

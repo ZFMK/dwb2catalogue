@@ -18,6 +18,8 @@ class InsertInstitute(DBInsert):
 	def __init__(self, globalconfig, institutegetter):
 		DBInsert.__init__(self, globalconfig)
 		self.institutegetter = institutegetter
+		
+		self.insertInstitutes()
 
 
 	def insertInstitutes(self):
@@ -29,11 +31,13 @@ class InsertInstitute(DBInsert):
 			
 			self.createTempTable()
 			self.fillTempTable()
-			self.insertInstitutes()
+			self.copyInstitutes()
 			self.updateSpecimens()
 			self.dropTempTable()
 			
 			dataslice = self.institutegetter.getNextDataPage()
+		
+		return
 
 
 	def createTempTable(self):
@@ -42,14 +46,14 @@ class InsertInstitute(DBInsert):
 			`CollectionSpecimenID` int(10) NOT NULL,
 			`IdentificationUnitID` int(10) NOT NULL,
 			`ExternalDatasourceID` int(10) NOT NULL,
-			`project_institute` varchar(50) NOT NULL,
-			`project_name` varchar(50) NULL,
+			`project_institute` varchar(255) NOT NULL,
+			`project_name` varchar(255) NULL,
 			`institute_short` varchar(80) NULL,
 			`institute_name` varchar(255) NULL,
 			KEY (`DatasourceID`),
 			KEY (`CollectionSpecimenID`),
 			KEY (`IdentificationUnitID`),
-			KEY (`project_id`)
+			KEY (`ExternalDatasourceID`)
 			)
 		;""".format(self.db_suffix)
 		
@@ -77,12 +81,19 @@ class InsertInstitute(DBInsert):
 		self.con.commit()
 
 
-	def insertInstitutes(self):
+	def copyInstitutes(self):
+		"""
+		only copy institutes from temp table that have not been inserted before
+		"""
+		
 		query = """
 		INSERT INTO `{0}_Institutes`
 		(`DatasourceID`,`ExternalDatasourceID`, `project_institute`, `project_name`, `institute_short`, `institute_name`)
-		SELECT DISTINCT `DatasourceID`,`ExternalDatasourceID`, `project_institute`, `project_name`, `institute_short`, `institute_name`
-		FROM `{0}_Institutes_Temp`
+		SELECT DISTINCT itemp.`DatasourceID`, itemp.`ExternalDatasourceID`, itemp.`project_institute`, itemp.`project_name`, itemp.`institute_short`, itemp.`institute_name`
+		FROM `{0}_Institutes_Temp` itemp
+		LEFT JOIN `{0}_Institutes` i
+		ON (i.`DatasourceID` = itemp.`DatasourceID` AND i.`ExternalDatasourceID` = itemp.`ExternalDatasourceID`)
+		WHERE i.institute_id IS NULL
 		;""".format(self.db_suffix)
 		
 		self.cur.execute(query)
@@ -93,17 +104,20 @@ class InsertInstitute(DBInsert):
 		query = """
 		UPDATE `{0}_Specimen` cs
 		INNER JOIN `{0}_Institutes_Temp` it
-		ON (cs.DatasourceID = it.DatasourceID
+		ON (
+			cs.DatasourceID = it.DatasourceID
 			AND cs.`CollectionSpecimenID` = it.`CollectionSpecimenID`
 			AND cs.`IdentificationUnitID` = it.`IdentificationUnitID`
-		INNER JOIN `{0}_Institutes` i ON (
-			i.`ExternalDatasourceID`, = it.ExternalDatasourceID
+			)
+		INNER JOIN `{0}_Institutes` i
+		ON (
+			i.`ExternalDatasourceID` = it.ExternalDatasourceID
 			AND i.DatasourceID = it.DatasourceID
 		)
-		set cs.`institute_id` = i.`institute_id`
-		""".format(self.db_suffix)
+		SET cs.`institute_id` = i.`institute_id`
+		;""".format(self.db_suffix)
 		
+		log_query.info(query)
 		self.cur.execute(query)
 		self.con.commit()
-	
 

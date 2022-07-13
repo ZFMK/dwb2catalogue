@@ -7,7 +7,9 @@ requires = [
     'pymysql',
     'pyodbc',
     'pudb',
-    'configparser'
+    'configparser',
+    'cryptography',
+    'requests'
     ]
 
 setup(name='sync_dwb_webportal',
@@ -15,5 +17,6 @@ setup(name='sync_dwb_webportal',
       description='Copy data from different DiversityCollection instances into the web portal of ZFMK CollectionCatalogue',
       author='Björn Quast',
       author_email='bquast@leibniz-zfmk.de',
-      install_requires=requires
+      install_requires=requires,
+      packages=find_packages()
       )

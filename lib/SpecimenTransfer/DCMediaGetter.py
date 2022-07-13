@@ -11,9 +11,8 @@ from .DCGetter import DCGetter
 
 
 class DCMediaGetter(DCGetter):
-	def __init__(self, data_source_name, globalconfig, datasourceid):
-		DCGetter.__init__(self, data_source_name, globalconfig)
-		self.datasourceid = datasourceid
+	def __init__(self, dc_db, data_source_name, globalconfig, datasourceid):
+		DCGetter.__init__(self, dc_db, data_source_name, globalconfig, datasourceid)
 		
 		self.pagesize = 1000
 		
@@ -58,12 +57,14 @@ class DCMediaGetter(DCGetter):
 				csi.Title as [media_title]
 			INTO [{1}]
 			FROM IdentificationUnit iu
-				INNER JOIN CollectionProject p on p.CollectionSpecimenID=iu.CollectionSpecimenID
+				INNER JOIN [{2}] ids_temp
+					ON (ids_temp.CollectionSpecimenID = iu.CollectionSpecimenID AND ids_temp.IdentificationUnitID = iu.IdentificationUnitID)
+				 -- INNER JOIN CollectionProject p on p.CollectionSpecimenID=iu.CollectionSpecimenID
 				INNER JOIN CollectionSpecimenImage csi on csi.CollectionSpecimenID=iu.CollectionSpecimenID
 				INNER JOIN CollectionSpecimen s ON s.CollectionSpecimenID=iu.CollectionSpecimenID
-			WHERE {2} AND (csi.DataWithholdingReason IS NULL OR csi.DataWithholdingReason='') {3}
+			WHERE (csi.DataWithholdingReason IS NULL OR csi.DataWithholdingReason='') {3}
 			GROUP BY csi.CollectionSpecimenID, iu.IdentificationUnitID, csi.[URI], csi.[LicenseHolder], csi.[LicenseNotes], csi.[LicenseType], csi.[ImageType], csi.[Title]
-			ORDER BY csi.CollectionSpecimenID""".format(self.datasourceid, self.temptable, self.project_id_string, withholdclause)
+			ORDER BY csi.CollectionSpecimenID""".format(self.datasourceid, self.temptable, self.transfer_ids_temptable, withholdclause)
 		log_query.info("\nCollectionSpecimenImage:\n\t%s" % query)
 		
 		

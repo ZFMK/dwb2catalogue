@@ -11,9 +11,8 @@ from .DCGetter import DCGetter
 
 
 class DCInstituteGetter(DCGetter):
-	def __init__(self, data_source_name, globalconfig, datasourceid):
-		DCGetter.__init__(self, data_source_name, globalconfig)
-		self.datasourceid = datasourceid
+	def __init__(self, dc_db, data_source_name, globalconfig, datasourceid):
+		DCGetter.__init__(self, dc_db, data_source_name, globalconfig, datasourceid)
 		
 		self.pagesize = 1000
 		
@@ -45,11 +44,12 @@ class DCInstituteGetter(DCGetter):
 		INTO [{1}]
 		FROM CollectionExternalDatasource ced
 		INNER JOIN CollectionSpecimen cs ON (ced.ExternalDatasourceID = cs.ExternalDatasourceID)
-		INNER JOIN CollectionProject p on p.CollectionSpecimenID=cs.CollectionSpecimenID
+		 -- INNER JOIN CollectionProject p on p.CollectionSpecimenID=cs.CollectionSpecimenID
 		INNER JOIN IdentificationUnit iu ON (iu.CollectionSpecimenID = cs.CollectionSpecimenID)
-		WHERE {2}
+		INNER JOIN [{2}] ids_temp
+			ON (ids_temp.CollectionSpecimenID = iu.CollectionSpecimenID AND ids_temp.IdentificationUnitID = iu.IdentificationUnitID)
 		ORDER BY cs.CollectionSpecimenID, iu.IdentificationUnitID
-		;""".format(self.datasourceid, self.temptable, self.project_id_string)
+		;""".format(self.datasourceid, self.temptable, self.transfer_ids_temptable)
 		
 		log_query.info("\nInstitutes:\n\t%s" % query)
 		self.cur.execute(query)

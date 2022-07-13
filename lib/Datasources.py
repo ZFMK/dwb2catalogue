@@ -9,7 +9,7 @@ logger = logging.getLogger('sync_webportal')
 log_missing_taxa = logging.getLogger('missing_taxa')
 
 
-from .MySQLConnector import MySQLConnector
+from DBConnectors.MySQLConnector import MySQLConnector
 
 
 

@@ -11,7 +11,7 @@ import pudb
 
 from .TaxaMatchTable import TaxaMatchTable
 
-from ..MySQLConnector import MySQLConnector
+from DBConnectors.MySQLConnector import MySQLConnector
 
 
 class TaxaMatcher():
@@ -81,10 +81,11 @@ class TaxaMatcher():
 				# there might be gaps in the primary key column
 				#pudb.set_trace()
 				while len(specimens) <= 0 and self.currentpage <= self.maxpage:
-					self.currentpage = self.currentpage + 1
 					specimens = self.getSpecimenPage(self.currentpage)
+					self.currentpage = self.currentpage + 1
 					if len(specimens) > 0:
 						return specimens
+				self.pagingstarted = False
 				return None
 		else:
 			self.pagingstarted = False
@@ -128,6 +129,11 @@ class TaxaMatcher():
 			self.matchingtable.markMatchedTaxaInMergeTable()
 			
 			self.specimendata = self.getNextSpecimenPage()
+			
+			#if self.currentpage >= 70:
+			#	pudb.set_trace()
+			
+		return
 	
 	
 	
@@ -171,7 +177,7 @@ class TaxaMatcher():
 			
 			# if there is an empty string in taxonstring try to insert the data from FamiliyCache 
 			if (taxonstring == ''):
-				if (familycache is not None) or (familycache != ''):
+				if (familycache is not None) and (familycache != ''):
 					taxonstring = familycache
 				
 			taxon_name_parts = []
@@ -195,7 +201,7 @@ class TaxaMatcher():
 				taxon_name = None
 			
 			else:
-				taxon_name = ' '.join(taxon_name_parts)
+				taxon_name = ' '.join(taxon_name_parts).strip()
 			
 			# add family if there is one
 			family_name = familycache
@@ -211,9 +217,7 @@ class TaxaMatcher():
 	
 	
 	def deleteUnMatchedSpecimens(self):
-		# this deletes from specimen table only, not the connected data, it might be better to delete from all, 
-		# prevent import of non-matched specimens or have a where clause in solr that prevents specimens with no taxon_id from 
-		# being indexed
+		# this deletes from specimen table and the connected data
 		
 		query = """
 		DELETE br FROM `{0}_Barcode_Reads` br
@@ -225,7 +229,7 @@ class TaxaMatcher():
 		self.cur.execute(query)
 		self.con.commit()
 		
-		tables = ["Media", "Geo", "Barcode", "Data2Specimen", "CollectionProjects"]
+		tables = ["Media", "Geo", "Barcode", "Data2Specimen", "CollectionProject"]
 		
 		for table in tables:
 			query = """
@@ -236,6 +240,30 @@ class TaxaMatcher():
 			""".format(self.db_suffix, table)
 			self.cur.execute(query)
 			self.con.commit()
+		
+		query = """
+		DELETE pu FROM `{0}_ProjectUser` pu
+		LEFT JOIN `{0}_CollectionProject` cp
+		ON cp.ProjectID = pu.ProjectID AND cp.DatasourceID = pu.DatasourceID
+		WHERE cp.ProjectID IS NULL
+		;""".format(self.db_suffix)
+		
+		#log_queries.info(query)
+		#pudb.set_trace()
+		self.cur.execute(query)
+		self.con.commit()
+		
+		query = """
+		DELETE p FROM `{0}_Project` p
+		LEFT JOIN `{0}_CollectionProject` cp
+		ON cp.ProjectID = p.ProjectID AND cp.DatasourceID = p.DatasourceID
+		WHERE cp.ProjectID IS NULL
+		;""".format(self.db_suffix)
+		
+		#log_queries.info(query)
+		#pudb.set_trace()
+		self.cur.execute(query)
+		self.con.commit()
 		
 		query = """
 		DELETE s FROM `{0}_Specimen` s

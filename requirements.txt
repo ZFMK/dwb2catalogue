@@ -1,0 +1,8 @@
+configparser
+pyodbc
+pymysql
+pudb
+cryptography
+requests
+
+

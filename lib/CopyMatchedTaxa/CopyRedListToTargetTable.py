@@ -8,7 +8,7 @@ log_queries = logging.getLogger('query')
 
 import pudb
 
-from ..MySQLConnector import MySQLConnector
+from DBConnectors.MySQLConnector import MySQLConnector
 
 
 class CopyRedListToTargetTable():
@@ -26,11 +26,20 @@ class CopyRedListToTargetTable():
 		self.db_suffix = self.config.db_suffix
 		
 		self.taxamergerdb = self.config.getTaxaMergerDBName()
-		
 		self.insertRedList2TargetTable()
 
 
 	def insertRedList2TargetTable(self):
+		query = """
+		INSERT INTO {0}_TaxaPropertyTerms
+		SELECT DISTINCT `id`, `term`, 'rl_category', 'de'
+		FROM {1}.TaxaPropertyTerms
+		;""".format(self.config.db_suffix, self.taxamergerdb)
+		
+		log_queries.info(query)
+		
+		self.cur.execute(query)
+		self.con.commit()
 		
 		query = """
 		INSERT INTO {0}_TaxaPropertyTerms
@@ -65,33 +74,6 @@ class CopyRedListToTargetTable():
 		
 		self.cur.execute(query)
 		self.con.commit()
-		
-		'''
-		query = """
-			INSERT INTO `{0}_TaxaRedLists`
-			(`taxon_id`, `value`, `category_id`, `reference_id`)
-			SELECT mt.id, trm.value, tp1.id, tp2.id
-			FROM {1}.TaxaMergeTable mt
-			INNER JOIN {1}.TaxaRedListTempTable trm
-			ON(
-				trm.SourceTaxonID = mt.SourceTaxonID
-				AND trm.TaxonomySourceID = mt.TaxonomySourceID
-			)
-			INNER JOIN `{0}_TaxaPropertyTerms` tp1 ON(
-				trm.term = tp1.term
-				AND tp1.category = 'rl_category'
-				AND tp1.lang = 'de'
-			)
-			INNER JOIN `{0}_TaxaPropertyTerms` tp2 ON(
-				trm.reference = tp2.term
-				AND tp2.category = 'rl_reference'
-				AND tp2.lang = 'de'
-			)
-			INNER JOIN `{0}_Taxa` t ON(
-				mt.id = t.id
-			)
-		;""".format(self.config.db_suffix, self.taxamergerdb)
-		'''
 		
 		query = """
 			INSERT INTO `{0}_TaxaRedLists`

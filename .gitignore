@@ -10,11 +10,13 @@ __pycache__/*
 pip-selfcheck.json
 
 config.ini
+config.ini.*
 bin/*
 include/*
 share/*
 packages/
 *.log
+*.egg-info/
 
 ### Vim ###
 [._]*.s[a-w][a-z]

@@ -7,7 +7,7 @@ logger = logging.getLogger('sync_webportal')
 
 import pudb
 
-from ..MySQLConnector import MySQLConnector
+from DBConnectors.MySQLConnector import MySQLConnector
 
 
 class CopyMatchedTaxa():

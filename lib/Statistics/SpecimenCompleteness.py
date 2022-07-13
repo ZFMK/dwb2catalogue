@@ -8,7 +8,7 @@ log_query = logging.getLogger('query')
 
 import pudb
 
-from ..MySQLConnector import MySQLConnector
+from DBConnectors.MySQLConnector import MySQLConnector
 
 
 class SpecimenCompleteness():

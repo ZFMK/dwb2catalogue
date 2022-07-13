@@ -11,9 +11,8 @@ from .DCGetter import DCGetter
 
 
 class DCGeoGetter(DCGetter):
-	def __init__(self, data_source_name, globalconfig, datasourceid):
-		DCGetter.__init__(self, data_source_name, globalconfig)
-		self.datasourceid = datasourceid
+	def __init__(self, dc_db, data_source_name, globalconfig, datasourceid):
+		DCGetter.__init__(self, dc_db, data_source_name, globalconfig, datasourceid)
 		
 		self.pagesize = 10000
 		
@@ -34,7 +33,7 @@ class DCGeoGetter(DCGetter):
 	def createGeoTempTable(self):
 		if self.respect_withhold is True:
 			withholdclause = """
-			AND (
+			WHERE (
 			(iu.[DataWithholdingReason] IS NULL OR iu.[DataWithholdingReason] = '')
 			AND (c.[DataWithholdingReason] IS NULL OR c.[DataWithholdingReason] = '')
 			AND (e.[DataWithholdingReason] IS NULL OR e.[DataWithholdingReason] = '')
@@ -53,14 +52,16 @@ class DCGeoGetter(DCGetter):
 				-- , l3.LocationAccuracy as Accuracy -- is not used, change InsertSpecimenQueries.ins_specimen_geo too, when it should be activated
 			INTO [{1}]
 			FROM IdentificationUnit iu
+				INNER JOIN [{2}] ids_temp
+					ON (ids_temp.CollectionSpecimenID = iu.CollectionSpecimenID AND ids_temp.IdentificationUnitID = iu.IdentificationUnitID)
 				LEFT JOIN CollectionSpecimen c on c.CollectionSpecimenID=iu.CollectionSpecimenID
 				INNER JOIN CollectionEvent e ON (e.CollectionEventID = c.CollectionEventID)
 				INNER JOIN CollectionEventLocalisation l3 on (l3.CollectionEventID=c.CollectionEventID and l3.LocalisationSystemID=8)
-				LEFT JOIN CollectionProject p on p.CollectionSpecimenID=iu.CollectionSpecimenID
-			WHERE {2} {3}
+				 -- LEFT JOIN CollectionProject p on p.CollectionSpecimenID=iu.CollectionSpecimenID
+			{3}
 			GROUP BY iu.CollectionSpecimenID, iu.IdentificationUnitID, l3.Location2,
 				l3.Location1
-				-- , l3.LocationAccuracy""".format(self.datasourceid, self.temptable, self.project_id_string, withholdclause)
+				-- , l3.LocationAccuracy""".format(self.datasourceid, self.temptable, self.transfer_ids_temptable, withholdclause)
 		log_query.info("\nGeo Coords:\n\t%s" % query)
 		
 		

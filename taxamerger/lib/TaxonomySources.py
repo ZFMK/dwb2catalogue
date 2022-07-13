@@ -5,35 +5,34 @@ import pymysql  # -- for MySQl Errors
 
 
 import logging, logging.config
-logger = logging.getLogger('sync_webportal')
+logger = logging.getLogger('gbif_tnt_taxamerger')
 log_missing_taxa = logging.getLogger('missing_taxa')
 
 
-from .MySQLConnector import MySQLConnector
+from DBConnectors.MySQLConnector import MySQLConnector
 
 
 
 class TaxonomySources():
 	def __init__(self, globalconfig):
 		self.config = globalconfig
-		dbconfig = self.config.temp_db_parameters
-		self.tempdb = MySQLConnector(dbconfig)
-		self.con = self.tempdb.getConnection()
-		self.cur = self.tempdb.getCursor()
-		self.db_suffix = self.config.db_suffix
+		dbconfig = self.config.getTaxaMergerDBConfig()
+		self.taxamergerdb = MySQLConnector(dbconfig)
+		self.con = self.taxamergerdb.getConnection()
+		self.cur = self.taxamergerdb.getCursor()
 		
 	
 	def addTaxonomySource(self, taxonomysourcename):
-		query = """INSERT INTO `{0}_TaxonomySources` (`taxonomy_source_name`)
-			VALUES (%s);""".format(self.db_suffix)
+		query = """INSERT INTO `TaxonomySources` (`taxonomy_source_name`)
+			VALUES (%s);"""
 		self.cur.execute(query, [taxonomysourcename,])
 		self.con.commit()
 	
 	
 	def getTaxonomySourceID(self, taxonomysourcename):
-		query = """SELECT `TaxonomySourceID` FROM `{0}_TaxonomySources`
+		query = """SELECT `TaxonomySourceID` FROM `TaxonomySources`
 		WHERE `taxonomy_source_name` = %s
-		;""".format(self.db_suffix)
+		;"""
 		
 		self.cur.execute(query, [taxonomysourcename,])
 		row = self.cur.fetchone()

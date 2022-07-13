@@ -20,6 +20,11 @@ class MSSQLConnector():
 		else:
 			raise Exception ('No data base connection parameters given')
 		
+		# add the driver, important when server is given instead of dsn
+		mdriver = re.search('Driver\=([^;]+)', connectionstring, re.I)
+		if mdriver is None:
+			self.connectionstring = 'Driver=FreeTDS;' + self.connectionstring
+		
 		'''
 		take over attributes from MSSQLConnector class
 		'''
@@ -36,11 +41,7 @@ class MSSQLConnector():
 
 
 	def __mssql_connect(self):
-		try:
-			con = pyodbc.connect(self.connectionstring)
-		except pyodbc.Error as e:
-			log.critical("Error {0}: {1}".format(*e.args))
-			raise
+		con = pyodbc.connect(self.connectionstring)
 		return con
 
 	def closeConnection(self):

@@ -8,7 +8,7 @@ log_missing_taxa = logging.getLogger('missing_taxa')
 
 import pudb
 
-from ..MySQLConnector import MySQLConnector
+from DBConnectors.MySQLConnector import MySQLConnector
 
 class NestedSetGenerator():
 	def __init__(self, globalconfig):

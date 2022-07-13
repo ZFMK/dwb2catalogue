@@ -11,11 +11,10 @@ from .DCGetter import DCGetter
 
 
 class DCBarcodeReadsGetter(DCGetter):
-	def __init__(self, data_source_name, globalconfig, datasourceid):
-		DCGetter.__init__(self, data_source_name, globalconfig)
-		self.datasourceid = datasourceid
+	def __init__(self, dc_db, data_source_name, globalconfig, datasourceid):
+		DCGetter.__init__(self, dc_db, data_source_name, globalconfig, datasourceid)
 		
-		self.pagesize = 10000
+		self.pagesize = 1000
 		
 		self.temptable = "#BarcodeReadsTempTable"
 		self.createBarcodeReadsTempTable()
@@ -95,10 +94,12 @@ class DCBarcodeReadsGetter(DCGetter):
 					SELECT iu.CollectionSpecimenID, iu.IdentificationUnitID,
 						iu.AnalysisID, max(iu.LogCreatedWhen) as LogCreatedWhen
 					FROM IdentificationUnitAnalysis iu
-						INNER JOIN CollectionProject p ON p.CollectionSpecimenID=iu.CollectionSpecimenID
+						INNER JOIN [{2}] ids_temp
+							ON (ids_temp.CollectionSpecimenID = iu.CollectionSpecimenID AND ids_temp.IdentificationUnitID = iu.IdentificationUnitID)
+						 -- INNER JOIN CollectionProject p ON p.CollectionSpecimenID=iu.CollectionSpecimenID
 						INNER JOIN IdentificationUnit iu2 ON iu2.IdentificationUnitID = iu.IdentificationUnitID
 						INNER JOIN CollectionSpecimen s ON s.CollectionSpecimenID=iu.CollectionSpecimenID
-					WHERE ({3}) and ({2}) {5}
+					WHERE ({3}) {5}
 					GROUP BY iu.CollectionSpecimenID, iu.IdentificationUnitID, iu.AnalysisID
 				) AS a
 					INNER JOIN IdentificationUnitAnalysis iua ON (
@@ -115,7 +116,7 @@ class DCBarcodeReadsGetter(DCGetter):
 					)
 				WHERE iuamp.Value IS NOT NULL
 				ORDER By iua.CollectionSpecimenID, iua.IdentificationUnitID, iuamp.MethodID, iuamp.MethodMarker, iuamp.ParameterID
-				;""".format(self.datasourceid, self.temptable, self.project_id_string, self.analysis_id_method_string, parameter_id_offset, withholdclause)
+				;""".format(self.datasourceid, self.temptable, self.transfer_ids_temptable, self.analysis_id_method_string, parameter_id_offset, withholdclause)
 			log_query.info("\nSpecimen BarcodeReads:\n\t%s" % query)
 			
 			self.cur.execute(query)
@@ -163,8 +164,10 @@ class DCBarcodeReadsGetter(DCGetter):
 							SELECT iu.CollectionSpecimenID, iu.IdentificationUnitID,
 								iu.AnalysisID, max(iu.LogCreatedWhen) as LogCreatedWhen
 							FROM IdentificationUnitAnalysis iu
-								INNER JOIN CollectionProject p ON p.CollectionSpecimenID=iu.CollectionSpecimenID
-							WHERE ({3}) and ({2}) AND iu.ToolUsage IS NOT NULL  -- withhold not implemented here
+								INNER JOIN [{2}] ids_temp
+									ON (ids_temp.CollectionSpecimenID = iu.CollectionSpecimenID AND ids_temp.IdentificationUnitID = iu.IdentificationUnitID)
+								 -- INNER JOIN CollectionProject p ON p.CollectionSpecimenID=iu.CollectionSpecimenID
+							WHERE ({3}) AND iu.ToolUsage IS NOT NULL  -- withhold not implemented here
 							GROUP BY iu.CollectionSpecimenID, iu.IdentificationUnitID, iu.AnalysisID
 						) AS a
 						INNER JOIN IdentificationUnitAnalysis iua ON (a.CollectionSpecimenID=iua.CollectionSpecimenID
@@ -178,7 +181,7 @@ class DCBarcodeReadsGetter(DCGetter):
 					-- should we add a where clause to prevent empty term and field_id? This occures when ToolUsage contains /Tools/Tool[@Name=Barcode] instead of Trace e. g. IDs: 500449 = Coregonen01C11 vs. 2000543 = ZFMK-TIS-2000543
 					-- Done with inner join
 					ORDER By b.CollectionSpecimenID, b.IdentificationUnitID
-				""".format(self.datasourceid, self.temptable, self.project_id_string, self.analysis_id_string, parameter_id_offset)
+				""".format(self.datasourceid, self.temptable, self.transfer_ids_temptable, self.analysis_id_string, parameter_id_offset)
 			log_query.info("\nSpecimen BarcodeReads:\n\t%s" % query)
 			
 			self.cur.execute(query)

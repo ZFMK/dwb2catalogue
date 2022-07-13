@@ -5,7 +5,7 @@ import re
 import pudb
 import logging, logging.config
 
-logger = logging.getLogger('sync_webportal')
+logger = logging.getLogger('gbif_tnt_taxamerger')
 log_query = logging.getLogger('query')
 
 
@@ -26,7 +26,7 @@ class MySQLConnector():
 		else: 
 			self.config = config
 		
-		# chek if there is something in the other parameters
+		# check if there is something in the other parameters
 		if host is not None:
 			self.config['host'] = host
 		if user is not None:
@@ -60,9 +60,9 @@ class MySQLConnector():
 
 	def __mysql_connect(self):
 		try:
-			con = pymysql.connect(host=self.config['host'], user=self.config['user'], passwd=self.config['passwd'], db=self.config['db'], charset=self.config['charset'])
+			con = pymysql.connect(host=self.config['host'], user=self.config['user'], passwd=self.config['passwd'], db=self.config['db'], charset=self.config['charset'], port=int(self.config['port']))
 		except pymysql.Error as e:
-			log.critical("Error {0}: {1}".format(*e.args))
+			logger.critical("Error {0}: {1}".format(*e.args))
 			raise
 		return con
 

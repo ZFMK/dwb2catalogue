@@ -11,10 +11,9 @@ from .DCGetter import DCGetter
 
 
 class DCSpecimenDataGetter(DCGetter):
-	def __init__(self, data_source_name, globalconfig, table, datasourceid):
-		DCGetter.__init__(self, data_source_name, globalconfig)
+	def __init__(self, dc_db, data_source_name, globalconfig, table, datasourceid):
+		DCGetter.__init__(self, dc_db, data_source_name, globalconfig, datasourceid)
 		self.table = table
-		self.datasourceid = datasourceid
 		
 		# will be overwritten in create[..]TempTable methods, just a dummy here to ensure that a name is available that produces a temporary table
 		self.temptable = "#temptable"
@@ -87,7 +86,7 @@ class DCSpecimenDataGetter(DCGetter):
 		
 		if self.respect_withhold is True:
 			withholdclause = """
-			AND (
+			WHERE (
 			(iu.[DataWithholdingReason] IS NULL OR iu.[DataWithholdingReason] = '')
 			AND (s.[DataWithholdingReason] IS NULL OR s.[DataWithholdingReason] = '')
 			)
@@ -106,12 +105,14 @@ class DCSpecimenDataGetter(DCGetter):
 				iu.Gender AS [17]
 			INTO [{1}]
 			FROM IdentificationUnit iu
-				INNER JOIN CollectionProject p ON p.CollectionSpecimenID=iu.CollectionSpecimenID
+				INNER JOIN [{2}] ids_temp
+					ON (ids_temp.CollectionSpecimenID = iu.CollectionSpecimenID AND ids_temp.IdentificationUnitID = iu.IdentificationUnitID)
+				 -- INNER JOIN CollectionProject p ON p.CollectionSpecimenID=iu.CollectionSpecimenID
 				INNER JOIN CollectionSpecimen s ON s.CollectionSpecimenID=iu.CollectionSpecimenID
-			WHERE {2} {3}
+			{3}
 			GROUP BY iu.CollectionSpecimenID, iu.IdentificationUnitID, iu.IdentificationUnitID,
 				iu.NumberOfUnits, iu.LifeStage,
-				iu.Gender""".format(self.datasourceid, self.temptable, self.project_id_string, withholdclause)
+				iu.Gender""".format(self.datasourceid, self.temptable, self.transfer_ids_temptable, withholdclause)
 		log_query.info("\nIdentification Unit:\n\t%s" % query)
 		
 		self.cur.execute(query)
@@ -147,18 +148,20 @@ class DCSpecimenDataGetter(DCGetter):
 				s.LabelTitle AS [99]
 			INTO [{1}]
 			FROM IdentificationUnit iu
+				INNER JOIN [{2}] ids_temp
+					ON (ids_temp.CollectionSpecimenID = iu.CollectionSpecimenID AND ids_temp.IdentificationUnitID = iu.IdentificationUnitID)
 				INNER JOIN IdentificationSequenceMax im on (im.IdentificationUnitID=iu.IdentificationUnitID
 					and iu.CollectionSpecimenID=im.CollectionSpecimenID)
 				INNER JOIN Identification i on (im.IdentificationUnitID=i.IdentificationUnitID
 					and im.CollectionSpecimenID=i.CollectionSpecimenID
 					and im.IdentificationSequenceMax=i.IdentificationSequence)
 				INNER JOIN CollectionSpecimen s on s.CollectionSpecimenID=iu.CollectionSpecimenID
-				INNER JOIN CollectionProject p on p.CollectionSpecimenID=s.CollectionSpecimenID
-			WHERE {2} AND i.TaxonomicName IS NOT NULL {3}
+				 -- INNER JOIN CollectionProject p on p.CollectionSpecimenID=s.CollectionSpecimenID
+			WHERE i.TaxonomicName IS NOT NULL {3}
 			GROUP BY s.CollectionSpecimenID, iu.IdentificationUnitID, i.TypeStatus, s.LabelTitle,
 				s.AccessionNumber, s.DepositorsName, s.LogCreatedWhen,
 				i.ResponsibleName,i.IdentificationDate,
-				s.RowGUID""".format(self.datasourceid, self.temptable, self.project_id_string, withholdclause)
+				s.RowGUID""".format(self.datasourceid, self.temptable, self.transfer_ids_temptable, withholdclause)
 		log_query.info("\nSpecimen data:\n\t%s" % query)
 		
 		self.cur.execute(query)
@@ -172,7 +175,7 @@ class DCSpecimenDataGetter(DCGetter):
 		
 		if self.respect_withhold is True:
 			withholdclause = """
-			AND (
+			WHERE (
 			(iu.[DataWithholdingReason] IS NULL OR iu.[DataWithholdingReason] = '')
 			AND (c.[DataWithholdingReason] IS NULL OR c.[DataWithholdingReason] = '')
 			AND (e.[DataWithholdingReason] IS NULL OR e.[DataWithholdingReason] = '')
@@ -206,16 +209,18 @@ class DCSpecimenDataGetter(DCGetter):
 				CAST(l3.Location1 AS VARCHAR(255)) as [26]
 			INTO [{1}]
 			FROM IdentificationUnit iu
+				INNER JOIN [{2}] ids_temp
+					ON (ids_temp.CollectionSpecimenID = iu.CollectionSpecimenID AND ids_temp.IdentificationUnitID = iu.IdentificationUnitID)
 				LEFT JOIN CollectionSpecimen c on c.CollectionSpecimenID=iu.CollectionSpecimenID
 				INNER JOIN CollectionEvent e on c.CollectionEventID=e.CollectionEventID
 				LEFT JOIN CollectionEventLocalisation l2 on (l2.CollectionEventID=e.CollectionEventID and l2.LocalisationSystemID=7)
 				LEFT JOIN CollectionEventLocalisation l3 on (l3.CollectionEventID=e.CollectionEventID and l3.LocalisationSystemID=13)
-				LEFT JOIN CollectionProject p on p.CollectionSpecimenID=iu.CollectionSpecimenID
-			WHERE {2} {3}
+				 -- LEFT JOIN CollectionProject p on p.CollectionSpecimenID=iu.CollectionSpecimenID
+			{3}
 			GROUP BY iu.CollectionSpecimenID, iu.IdentificationUnitID, e.CollectionDate, e.CollectionDay,
 				e.CollectionMonth, e.CollectionYear, e.CollectionDateSupplement, e.CollectorsEventNumber,
 				e.CountryCache, e.LocalityDescription, e.HabitatDescription, e.CollectingMethod,
-				l2.Location1, l3.Location1""".format(self.datasourceid, self.temptable, self.project_id_string, withholdclause)
+				l2.Location1, l3.Location1""".format(self.datasourceid, self.temptable, self.transfer_ids_temptable, withholdclause)
 		log_query.info("\nEvent:\n\t%s" % query)
 		
 		self.cur.execute(query)
@@ -230,7 +235,7 @@ class DCSpecimenDataGetter(DCGetter):
 		#if self.respect_withhold is True:
 		# keep agent withold fixed?
 		withholdclause = """
-		AND (
+		WHERE (
 		(iu.[DataWithholdingReason] IS NULL OR iu.[DataWithholdingReason] = '')
 		AND (s.[DataWithholdingReason] IS NULL OR s.[DataWithholdingReason] = '')
 		AND (ca.[DataWithholdingReason] IS NULL OR ca.[DataWithholdingReason]='')
@@ -249,13 +254,15 @@ class DCSpecimenDataGetter(DCGetter):
 				CAST(ca.Notes AS VARCHAR(max)) AS [5]
 			INTO [{1}]
 			FROM IdentificationUnit iu
-				INNER JOIN CollectionProject p on p.CollectionSpecimenID=iu.CollectionSpecimenID
+				INNER JOIN [{2}] ids_temp
+					ON (ids_temp.CollectionSpecimenID = iu.CollectionSpecimenID AND ids_temp.IdentificationUnitID = iu.IdentificationUnitID)
+				 -- INNER JOIN CollectionProject p on p.CollectionSpecimenID=iu.CollectionSpecimenID
 				INNER JOIN CollectionAgent ca on ca.CollectionSpecimenID=iu.CollectionSpecimenID
 				INNER JOIN CollectionSpecimen s ON s.CollectionSpecimenID=iu.CollectionSpecimenID
-			WHERE {2} {3}
+			{3}
 			GROUP BY ca.CollectionSpecimenID, iu.IdentificationUnitID, ca.CollectorsName,
 				ca.CollectorsNumber, ca.Notes, ca.CollectorsSequence
-			ORDER BY ca.CollectorsSequence""".format(self.datasourceid, self.temptable, self.project_id_string, withholdclause)
+			ORDER BY ca.CollectorsSequence""".format(self.datasourceid, self.temptable, self.transfer_ids_temptable, withholdclause)
 		log_query.info("\nCollection_Agents:\n\t%s" % query)
 		
 		self.cur.execute(query)
@@ -288,6 +295,8 @@ class DCSpecimenDataGetter(DCGetter):
 				CAST(cp.PreparationMethod AS VARCHAR(max)) AS [16]
 			INTO [{1}]
 			FROM IdentificationUnit iu
+				INNER JOIN [{2}] ids_temp
+					ON (ids_temp.CollectionSpecimenID = iu.CollectionSpecimenID AND ids_temp.IdentificationUnitID = iu.IdentificationUnitID)
 				INNER JOIN IdentificationUnitInPart iup on (iup.CollectionSpecimenID=iu.CollectionSpecimenID
 					AND iu.IdentificationUnitID=iup.IdentificationUnitID)
 				INNER JOIN CollectionSpecimenPart cp on (cp.SpecimenPartID=iup.SpecimenPartID
@@ -295,9 +304,9 @@ class DCSpecimenDataGetter(DCGetter):
 					AND cp.DerivedFromSpecimenPartID IS NULL)
 				LEFT JOIN CollectionProject p on p.CollectionSpecimenID=iu.CollectionSpecimenID
 				INNER JOIN CollectionSpecimen s ON s.CollectionSpecimenID=iu.CollectionSpecimenID
-			WHERE {2} AND cp.PreparationMethod IS NOT NULL {3}
+			WHERE cp.PreparationMethod IS NOT NULL {3}
 			GROUP BY iu.CollectionSpecimenID, iu.IdentificationUnitID, cp.PreparationMethod
-			""".format(self.datasourceid, self.temptable, self.project_id_string, withholdclause)
+			""".format(self.datasourceid, self.temptable, self.transfer_ids_temptable, withholdclause)
 		log_query.info("\nSpecimen Parts:\n\t%s" % query)
 		
 		self.cur.execute(query)
@@ -313,7 +322,7 @@ class DCSpecimenDataGetter(DCGetter):
 		
 		if self.respect_withhold is True:
 			withholdclause = """
-			AND (
+			WHERE (
 			(iu.[DataWithholdingReason] IS NULL OR iu.[DataWithholdingReason] = '')
 			AND (s.[DataWithholdingReason] IS NULL OR s.[DataWithholdingReason] = '')
 			)
@@ -329,7 +338,9 @@ class DCSpecimenDataGetter(DCGetter):
 				c.CollectionName AS [23]
 			INTO [{1}]
 			FROM IdentificationUnit iu
-				INNER JOIN CollectionProject p ON p.CollectionSpecimenID=iu.CollectionSpecimenID
+				INNER JOIN [{2}] ids_temp
+					ON (ids_temp.CollectionSpecimenID = iu.CollectionSpecimenID AND ids_temp.IdentificationUnitID = iu.IdentificationUnitID)
+				 -- INNER JOIN CollectionProject p ON p.CollectionSpecimenID=iu.CollectionSpecimenID
 				INNER JOIN CollectionSpecimen s ON s.CollectionSpecimenID=iu.CollectionSpecimenID
 				INNER JOIN IdentificationUnitInPart iup on (iup.CollectionSpecimenID=iu.CollectionSpecimenID
 					AND iu.IdentificationUnitID=iup.IdentificationUnitID)
@@ -348,9 +359,9 @@ class DCSpecimenDataGetter(DCGetter):
 					WHERE c1.CollectionName = 'ZFMK'
 				) AS
 				c ON (c.CollectionID_l2 = csp.CollectionID OR c.CollectionID_l3 = csp.CollectionID OR c.CollectionID_l4 = csp.CollectionID)
-			WHERE {2} {3}
+			{3}
 			GROUP BY iu.CollectionSpecimenID, iu.IdentificationUnitID,
-				c.CollectionName""".format(self.datasourceid, self.temptable, self.project_id_string, withholdclause)
+				c.CollectionName""".format(self.datasourceid, self.temptable, self.transfer_ids_temptable, withholdclause)
 		log_query.info("\nCollection:\n\t%s" % query)
 		
 		
