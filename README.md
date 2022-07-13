@@ -11,8 +11,8 @@ Documentation on importing Specimens and Taxa from DiversityWorkbench databases 
 
 ## System requirements:
 
-    apt-get install apt-utils \
-    software-properties-common python3-dev \
+    apt-get install software-properties-common \
+    python3-dev \
     python3-setuptools \
     python3-pip \
     unixodbc unixodbc-dev \
