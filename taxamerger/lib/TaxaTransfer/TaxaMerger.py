@@ -29,7 +29,7 @@ class TaxaMerger():
 		self.genustemptable = "togenus"
 		self.subspeciestemptable = "tosubspecies"
 		
-		self.pagesize = 10000
+		self.pagesize = 1000
 		self.setMaxPage()
 		
 		self.createToFamilyTable()
@@ -686,7 +686,7 @@ class TaxaMerger():
 		`author` varchar(255) DEFAULT NULL,
 		`parent_taxon` varchar(255),
 		`rank` varchar(25) NOT NULL,
-		`parent_id` int(10) unsigned DEFAULT NULL,
+		`parent_id` INT DEFAULT NULL,
 		`rank_code` int(10) NOT NULL DEFAULT 0,
 		`scientificName` varchar(255),
 		`matched_in_specimens` BOOLEAN DEFAULT 0,

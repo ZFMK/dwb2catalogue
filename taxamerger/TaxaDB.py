@@ -90,7 +90,7 @@ class CreateTableQueries():
 		`author` varchar(255) DEFAULT NULL,
 		`parent_taxon` varchar(255),
 		`rank` varchar(25) NOT NULL,
-		`parent_id` int(10) unsigned DEFAULT NULL,
+		`parent_id` INT DEFAULT NULL,
 		`rank_code` int(10) NOT NULL DEFAULT 0,
 		`scientificName` varchar(255),
 		`matched_in_specimens` BOOLEAN DEFAULT 0,
@@ -226,13 +226,13 @@ class CreateTableQueries():
 		return [
 		"""DROP TABLE IF EXISTS `TaxaSynonymsMergeTable`""",
 		"""CREATE TABLE `TaxaSynonymsMergeTable` (
-		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+		`id` INT NOT NULL AUTO_INCREMENT,
 		`SourceTaxonID` int(10) NOT NULL,
 		`TaxonomySourceID` int(10) NOT NULL,
 		`SourceProjectID` int(10) NOT NULL DEFAULT 0,
 		`SourceAcceptedTaxonID`  int(10) NOT NULL,
-		`taxon_id` int unsigned COMMENT 'the taxon-id of the synonym',
-		`syn_taxon_id` int unsigned COMMENT 'the taxon-id of the accepted name in _Taxa table',
+		`taxon_id` INT COMMENT 'the taxon-id of the synonym',
+		`syn_taxon_id` INT COMMENT 'the taxon-id of the accepted name in _Taxa table',
 		`taxon` varchar(255) NOT NULL,
 		`author` varchar(255) DEFAULT NULL,
 		`rank` varchar(25) NOT NULL,
@@ -253,7 +253,7 @@ class CreateTableQueries():
 		return [
 		"""DROP TABLE IF EXISTS `TaxaCommonNamesTempTable`""",
 		"""CREATE TABLE `TaxaCommonNamesTempTable` (
-		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+		`id` INT NOT NULL AUTO_INCREMENT,
 		`SourceTaxonID` int(10) NOT NULL,
 		`TaxonomySourceID` int(10) NOT NULL,
 		`SourceProjectID` int(10) NOT NULL DEFAULT 0,
@@ -269,7 +269,7 @@ class CreateTableQueries():
 		return [
 		"""DROP TABLE IF EXISTS `TaxaPropertyTerms`""",
 		"""CREATE TABLE `TaxaPropertyTerms` (
-		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+		`id` INT NOT NULL AUTO_INCREMENT,
 		`term` varchar(800) NOT NULL,
 		`category` enum('rl_category','rl_reference') NOT NULL,
 		`lang` varchar(10) NOT NULL DEFAULT 'de',
@@ -302,8 +302,8 @@ class CreateTableQueries():
 		return [
 		"""DROP TABLE IF EXISTS `TaxaRedListTempTable`""",
 		"""CREATE TABLE `TaxaRedListTempTable` (
-		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-		`taxon_id` int unsigned COMMENT 'the taxon_id of name in _Taxa table',
+		`id` INT NOT NULL AUTO_INCREMENT,
+		`taxon_id` INT COMMENT 'the taxon_id of name in _Taxa table',
 		`SourceTaxonID` int(10) NOT NULL,
 		`TaxonomySourceID` int(10) NOT NULL,
 		`SourceProjectID` int(10) NOT NULL DEFAULT 0,

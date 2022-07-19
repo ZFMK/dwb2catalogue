@@ -46,12 +46,13 @@ class CopyResultDB():
 		
 		# only copy the database when number of new specimens is at least 90% of the old ones
 		#if temp_sp_num > (prod_sp_num - int(prod_sp_num / 10)):
+		# currently: always copy
 		if True:
 			logger.info('Copying temp database to production started')
 			logger.info('Replacing {0} specimen with {1} specimen'.format(prod_sp_num, temp_sp_num))
 			
 			tables = temp_db.getTableNames()
-			tables2copy = []
+			tables2copy = ['taxa_matched', 'taxa_not_matched']
 			for table in tables:
 				if table.startswith(self.config.db_suffix):
 					tables2copy.append(table)

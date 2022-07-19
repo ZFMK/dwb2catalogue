@@ -94,7 +94,7 @@ class SpecimenCompleteness():
 		
 		query = """
 		CREATE TEMPORARY TABLE `temp_SpecimenCompleteness` (
-			`specimen_id` int(10) unsigned NOT NULL,
+			`specimen_id` INT NOT NULL,
 			`completeness` decimal(15,0) DEFAULT NULL,
 			PRIMARY KEY(`specimen_id`)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4

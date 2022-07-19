@@ -14,11 +14,13 @@ class DCSpecimenDataGetter(DCGetter):
 	def __init__(self, dc_db, data_source_name, globalconfig, table, datasourceid):
 		DCGetter.__init__(self, dc_db, data_source_name, globalconfig, datasourceid)
 		self.table = table
+		self.parent_collection_name= globalconfig.parent_collection_name
+		
 		
 		# will be overwritten in create[..]TempTable methods, just a dummy here to ensure that a name is available that produces a temporary table
 		self.temptable = "#temptable"
 		
-		self.pagesize = 10000
+		self.pagesize = 1000
 		self.setTempTable()
 		self.setMaxPage()
 		
@@ -320,6 +322,28 @@ class DCSpecimenDataGetter(DCGetter):
 	def createCollectionTempTable(self):
 		self.temptable = "#CollectionTempTable"
 		
+		collection_join = """
+		INNER JOIN Collection c ON c.CollectionID = csp.CollectionID
+		"""
+		
+		if self.parent_collection_name is not None and self.parent_collection_name != '':
+			collection_join = """
+			INNER JOIN 
+			(
+				SELECT c2.CollectionName AS CollectionName, 
+				c2.CollectionID AS CollectionID_l2,
+				c3.CollectionID AS CollectionID_l3,
+				c4.CollectionID AS CollectionID_l4
+				FROM Collection c1 LEFT JOIN Collection c2 ON(c1.CollectionID = c2.CollectionParentID AND c1.CollectionID != c2.CollectionID)
+				LEFT JOIN Collection c3 ON(c2.CollectionID = c3.CollectionParentID AND c2.CollectionID != c3.CollectionID)
+				LEFT JOIN Collection c4 ON(c3.CollectionID = c4.CollectionParentID AND c3.CollectionID != c4.CollectionID)
+				
+				WHERE c1.CollectionName = '{0}'
+			) AS
+			c ON (c.CollectionID_l2 = csp.CollectionID OR c.CollectionID_l3 = csp.CollectionID OR c.CollectionID_l4 = csp.CollectionID)
+			""".format(self.parent_collection_name)
+		
+		
 		if self.respect_withhold is True:
 			withholdclause = """
 			WHERE (
@@ -347,21 +371,10 @@ class DCSpecimenDataGetter(DCGetter):
 				INNER JOIN CollectionSpecimenPart csp on (csp.SpecimenPartID=iup.SpecimenPartID
 					AND csp.CollectionSpecimenID=iup.CollectionSpecimenID
 					AND csp.DerivedFromSpecimenPartID IS NULL)
-				INNER JOIN 
-				(
-					SELECT c2.CollectionName AS CollectionName, 
-					c2.CollectionID AS CollectionID_l2,
-					c3.CollectionID AS CollectionID_l3,
-					c4.CollectionID AS CollectionID_l4
-					FROM Collection c1 LEFT JOIN Collection c2 ON(c1.CollectionID = c2.CollectionParentID AND c1.CollectionID != c2.CollectionID)
-					LEFT JOIN Collection c3 ON(c2.CollectionID = c3.CollectionParentID AND c2.CollectionID != c3.CollectionID)
-					LEFT JOIN Collection c4 ON(c3.CollectionID = c4.CollectionParentID AND c3.CollectionID != c4.CollectionID)
-					WHERE c1.CollectionName = 'ZFMK'
-				) AS
-				c ON (c.CollectionID_l2 = csp.CollectionID OR c.CollectionID_l3 = csp.CollectionID OR c.CollectionID_l4 = csp.CollectionID)
-			{3}
+				{3}
+			{4}
 			GROUP BY iu.CollectionSpecimenID, iu.IdentificationUnitID,
-				c.CollectionName""".format(self.datasourceid, self.temptable, self.transfer_ids_temptable, withholdclause)
+				c.CollectionName""".format(self.datasourceid, self.temptable, self.transfer_ids_temptable, collection_join, withholdclause)
 		log_query.info("\nCollection:\n\t%s" % query)
 		
 		

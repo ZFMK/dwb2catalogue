@@ -57,7 +57,7 @@ class FlatTaxaTable():
 				DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
 
 				DROP TEMPORARY TABLE IF EXISTS _ranks;
-				CREATE TEMPORARY TABLE _ranks(rank_code INT UNSIGNED NOT NULL, rank_name VARCHAR(200));
+				CREATE TEMPORARY TABLE _ranks(rank_code INT NOT NULL, rank_name VARCHAR(200));
 				INSERT INTO _ranks (rank_code, rank_name) VALUES (0, 'tax_species');
 				INSERT INTO _ranks (rank_code, rank_name)
 				SELECT rank_code,

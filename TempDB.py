@@ -56,14 +56,14 @@ class TempDB():
 			counter = 1
 			existing_dbs = []
 			currenttime = self.__getCurrentTime()
-			self.temp_db_name = """Transfer2ZFMKColl_{0}_{1}""".format(currenttime, counter)
+			self.temp_db_name = """Transfer2Catalog_{0}_{1}""".format(currenttime, counter)
 			self.execute("SHOW DATABASES")
 			rows = self.cur.fetchall()
 			for row in rows:
 				existing_dbs.append(row[0])
 			while (self.temp_db_name in existing_dbs) and (counter < 1000):
 				counter += 1
-				self.temp_db_name = """Transfer2ZFMKColl_{0}_{1}""".format(currenttime, counter)
+				self.temp_db_name = """Transfer2Catalog_{0}_{1}""".format(currenttime, counter)
 			if counter >= 1000:
 				raise ValueError('TempDB.get_name(): no free name found for temporary database, something is wrong')
 			return self.temp_db_name
@@ -82,7 +82,7 @@ class TempDB():
 	def drop_temp_dbs(self):
 		""" Cleanup previous and leftover databases """
 
-		q8 = 'show databases where `database` like "Transfer2ZFMKColl_%"'
+		q8 = 'show databases where `database` like "Transfer2Catalog_%"'
 		self.execute(q8)
 		rows = self.cur.fetchall()
 		# keep the last three databases
@@ -165,9 +165,9 @@ class CreateTableQueries():
 
 	def Data(self):
 		q = """CREATE TABLE `{0}_Data` (
-				`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+				`id` INT NOT NULL AUTO_INCREMENT,
 				`term` varchar(3000) DEFAULT NULL,
-				`field_id` int(10) unsigned NOT NULL COMMENT 'references {0}_Data_Fields.id',
+				`field_id` INT NOT NULL COMMENT 'references {0}_Data_Fields.id',
 				PRIMARY KEY (`id`),
 				KEY  `idx_term` USING BTREE (`term`(255) ASC),
 				KEY `idx_field_id` USING BTREE (`field_id` ASC),
@@ -177,9 +177,9 @@ class CreateTableQueries():
 
 	def Data2Specimen(self):
 		return """CREATE TABLE `{0}_Data2Specimen` (
-			`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-			`data_id` int(10) unsigned DEFAULT NULL,
-			`specimen_id` int(10) unsigned DEFAULT NULL,
+			`id` INT NOT NULL AUTO_INCREMENT,
+			`data_id` INT DEFAULT NULL,
+			`specimen_id` INT DEFAULT NULL,
 			PRIMARY KEY (`id`),
 			KEY (`data_id`),
 			KEY (`specimen_id`),
@@ -196,7 +196,7 @@ class CreateTableQueries():
 
 	def Data_Fields(self):
 		return """CREATE TABLE {0}_Data_Fields (
-		  `id` int(10) unsigned NOT NULL,
+		  `id` INT NOT NULL,
 		  `lang` enum('prg','de','en') NOT NULL DEFAULT 'en' COMMENT 'Language. prg for internal use only!',
 		  `field_name` varchar(255) DEFAULT NULL COMMENT 'The field name from the table in DiversityCollection, i.e. `AccessionNumber`',
 		  `category` varchar(4) DEFAULT NULL COMMENT 'id zu _Data_Category',
@@ -211,8 +211,8 @@ class CreateTableQueries():
 
 	def Barcode(self):
 		return """CREATE TABLE `{0}_Barcode` (
-		  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-		  `specimen_id` int(10) unsigned NOT NULL,
+		  `id` INT NOT NULL AUTO_INCREMENT,
+		  `specimen_id` INT NOT NULL,
 		  `analysis_id` int(10) COMMENT 'the id for a specific analysis type',
 		  `analysis_number` varchar(50) DEFAULT NULL COMMENT 'Differentiate several barcodes of the organisme and the same type',
 		  `region` varchar(50) DEFAULT NULL,
@@ -229,11 +229,11 @@ class CreateTableQueries():
 
 	def Barcode_Reads(self):
 		return """CREATE TABLE `{0}_Barcode_Reads` (
-		  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-		  `barcode_id` int(10) unsigned NOT NULL,
-		  `read_id` int(10) unsigned DEFAULT NULL,
+		  `id` INT NOT NULL AUTO_INCREMENT,
+		  `barcode_id` INT NOT NULL,
+		  `read_id` INT DEFAULT NULL,
 		  `term` mediumtext DEFAULT NULL,
-		  `field_id` int(10) unsigned NOT NULL COMMENT 'references _Data_Fields.id',
+		  `field_id` INT NOT NULL COMMENT 'references _Data_Fields.id',
 		  PRIMARY KEY (`id`),
 		  KEY `idx_term` (`term`(255)) USING BTREE,
 		  KEY `idx_field_id` (`field_id`) USING BTREE,
@@ -244,8 +244,8 @@ class CreateTableQueries():
 
 	def Geo(self):
 		return """CREATE TABLE `{0}_Geo` (
-		`id` int(10) unsigned NOT NULL auto_increment,
-		`specimen_id` int(10) unsigned NOT NULL,
+		`id` INT NOT NULL auto_increment,
+		`specimen_id` INT NOT NULL,
 		`lat` varchar(45) DEFAULT NULL,
 		`lon` varchar(45) DEFAULT NULL,
 		`center_x` varchar(45) DEFAULT NULL,
@@ -253,20 +253,20 @@ class CreateTableQueries():
 		`radius` varchar(45) DEFAULT NULL,
 		PRIMARY KEY (`id`),
 		FOREIGN KEY (`specimen_id`) REFERENCES `{0}_Specimen` (`id`)
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Geokoordinaten aus CollectionSpecimen_ZFMK'""".format(self.db_suffix)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""".format(self.db_suffix)
 
 	def Specimen(self):
 		return """CREATE TABLE `{0}_Specimen` (
-		`id` int(10) unsigned NOT NULL auto_increment,
+		`id` INT NOT NULL auto_increment,
 		`DatasourceID` int(10) NOT NULL,
 		`CollectionSpecimenID` int(10) NOT NULL,
 		`IdentificationUnitID` int(10) NOT NULL,
-		`taxon_id` int(10) unsigned DEFAULT NULL COMMENT 'TNT TaxonID',
+		`taxon_id` INT DEFAULT NULL COMMENT 'TNT TaxonID',
 		`taxon` varchar(255) DEFAULT NULL,
 		`FamilyCache` varchar(255), 
 		`author` varchar(255) DEFAULT NULL,
 		`barcode` BOOLEAN NOT NULL DEFAULT 0 COMMENT 'Specimen has barcode',
-		`institute_id` int(10) unsigned DEFAULT NULL,
+		`institute_id` INT DEFAULT NULL,
 		`withhold` varchar(50) DEFAULT NULL,
 		`AccDate` DATETIME DEFAULT NULL,
 		`AccessionNumber` varchar(255) COMMENT 'copied here for easier access, otherwise it is in _Data table',
@@ -296,14 +296,14 @@ class CreateTableQueries():
 		`taxon` varchar(255) NOT NULL,
 		`author` varchar(255) DEFAULT NULL,
 		`rank` varchar(25) NOT NULL,
-		`parent_id` int(10) unsigned DEFAULT NULL,
-		`lft` int(10) unsigned DEFAULT NULL,
-		`rgt` int(10) unsigned DEFAULT NULL,
-		`known` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'number of species',
-		`collected` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'number of collected species',
-		`barcode` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'number of species with barcodes',
-		`collected_individuals` int(10) unsigned NOT NULL DEFAULT '0',
-		`barcode_individuals` int(10) unsigned NOT NULL DEFAULT '0',
+		`parent_id` INT DEFAULT NULL,
+		`lft` INT DEFAULT NULL,
+		`rgt` INT DEFAULT NULL,
+		`known` INT NOT NULL DEFAULT '0' COMMENT 'number of species',
+		`collected` INT NOT NULL DEFAULT '0' COMMENT 'number of collected species',
+		`barcode` INT NOT NULL DEFAULT '0' COMMENT 'number of species with barcodes',
+		`collected_individuals` INT NOT NULL DEFAULT '0',
+		`barcode_individuals` INT NOT NULL DEFAULT '0',
 		`rank_code` int(10) NOT NULL DEFAULT '0',
 		`scientificName` varchar(255),
 		`matched_in_specimens` BOOLEAN DEFAULT 0,
@@ -327,60 +327,60 @@ class CreateTableQueries():
 
 	def TaxaFlat(self):
 		return """CREATE TABLE `{0}_TaxaFlat` (
-		`taxon_id` int(10) unsigned NOT NULL,
+		`taxon_id` INT NOT NULL,
 		`tax_species` varchar(100) DEFAULT NULL,
-		`tax_species_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_species_parent_id` INT DEFAULT NULL,
 		`tax_species_author` varchar(200) DEFAULT NULL,
 		`tax_subgenus` varchar(100) DEFAULT NULL,
-		`tax_subgenus_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_subgenus_parent_id` INT DEFAULT NULL,
 		`tax_genus` varchar(100) DEFAULT NULL,
-		`tax_genus_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_genus_parent_id` INT DEFAULT NULL,
 		`tax_infratribe` varchar(100) DEFAULT NULL,
-		`tax_infratribe_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_infratribe_parent_id` INT DEFAULT NULL,
 		`tax_subtribe` varchar(100) DEFAULT NULL,
-		`tax_subtribe_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_subtribe_parent_id` INT DEFAULT NULL,
 		`tax_tribe` varchar(100) DEFAULT NULL,
-		`tax_tribe_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_tribe_parent_id` INT DEFAULT NULL,
 		`tax_supertribe` varchar(100) DEFAULT NULL,
-		`tax_supertribe_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_supertribe_parent_id` INT DEFAULT NULL,
 		`tax_infrafamily` varchar(100) DEFAULT NULL,
-		`tax_infrafamily_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_infrafamily_parent_id` INT DEFAULT NULL,
 		`tax_subfamily` varchar(100) DEFAULT NULL,
-		`tax_subfamily_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_subfamily_parent_id` INT DEFAULT NULL,
 		`tax_family` varchar(100) DEFAULT NULL,
-		`tax_family_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_family_parent_id` INT DEFAULT NULL,
 		`tax_superfamily` varchar(100) DEFAULT NULL,
-		`tax_superfamily_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_superfamily_parent_id` INT DEFAULT NULL,
 		`tax_infraorder` varchar(100) DEFAULT NULL,
-		`tax_infraorder_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_infraorder_parent_id` INT DEFAULT NULL,
 		`tax_suborder` varchar(100) DEFAULT NULL,
-		`tax_suborder_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_suborder_parent_id` INT DEFAULT NULL,
 		`tax_order` varchar(100) DEFAULT NULL,
-		`tax_order_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_order_parent_id` INT DEFAULT NULL,
 		`tax_superorder` varchar(100) DEFAULT NULL,
-		`tax_superorder_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_superorder_parent_id` INT DEFAULT NULL,
 		`tax_infraclass` varchar(100) DEFAULT NULL,
-		`tax_infraclass_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_infraclass_parent_id` INT DEFAULT NULL,
 		`tax_subclass` varchar(100) DEFAULT NULL,
-		`tax_subclass_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_subclass_parent_id` INT DEFAULT NULL,
 		`tax_class` varchar(100) DEFAULT NULL,
-		`tax_class_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_class_parent_id` INT DEFAULT NULL,
 		`tax_superclass` varchar(100) DEFAULT NULL,
-		`tax_superclass_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_superclass_parent_id` INT DEFAULT NULL,
 		`tax_infraphylum` varchar(100) DEFAULT NULL,
-		`tax_infraphylum_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_infraphylum_parent_id` INT DEFAULT NULL,
 		`tax_subphylum` varchar(100) DEFAULT NULL,
-		`tax_subphylum_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_subphylum_parent_id` INT DEFAULT NULL,
 		`tax_phylum` varchar(100) DEFAULT NULL,
-		`tax_phylum_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_phylum_parent_id` INT DEFAULT NULL,
 		`tax_superphylum` varchar(100) DEFAULT NULL,
-		`tax_superphylum_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_superphylum_parent_id` INT DEFAULT NULL,
 		`tax_infrakingdom` varchar(100) DEFAULT NULL,
-		`tax_infrakingdom_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_infrakingdom_parent_id` INT DEFAULT NULL,
 		`tax_subkingdom` varchar(100) DEFAULT NULL,
-		`tax_subkingdom_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_subkingdom_parent_id` INT DEFAULT NULL,
 		`tax_kingdom` varchar(100) DEFAULT NULL,
-		`tax_kingdom_parent_id` int(10) unsigned DEFAULT NULL,
+		`tax_kingdom_parent_id` INT DEFAULT NULL,
 		`synonyms` varchar(300) DEFAULT NULL,
 		`vernacular` varchar(100) DEFAULT NULL,
 		PRIMARY KEY (`taxon_id`)
@@ -388,9 +388,9 @@ class CreateTableQueries():
 
 	def TaxaSynonyms(self):
 		return """CREATE TABLE `{0}_TaxaSynonyms` (
-		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-		`taxon_id` int unsigned NOT NULL COMMENT 'the taxon-id of the synonym',
-		`syn_taxon_id` int unsigned NOT NULL COMMENT 'the taxon-id of the accepted name',
+		`id` INT NOT NULL AUTO_INCREMENT,
+		`taxon_id` INT NOT NULL COMMENT 'the taxon-id of the synonym',
+		`syn_taxon_id` INT NOT NULL COMMENT 'the taxon-id of the accepted name',
 		`taxon` varchar(255) NOT NULL,
 		`author` varchar(255) DEFAULT NULL,
 		`rank_code` int(10) NOT NULL DEFAULT '0',
@@ -402,8 +402,8 @@ class CreateTableQueries():
 
 	def TaxaCommonNames(self):
 		return """CREATE TABLE `{0}_TaxaCommonNames` (
-		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-		`taxon_id` int(10) unsigned NOT NULL,
+		`id` INT NOT NULL AUTO_INCREMENT,
+		`taxon_id` INT NOT NULL,
 		`name` varchar(255) NOT NULL,
 		`code` varchar(2) NOT NULL DEFAULT 'de',
 		`db_name` varchar(50) NOT NULL,
@@ -414,7 +414,7 @@ class CreateTableQueries():
 
 	def TaxaPropertyTerms(self):
 		return """CREATE TABLE `{0}_TaxaPropertyTerms` (
-		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+		`id` INT NOT NULL AUTO_INCREMENT,
 		`term` varchar(800) NOT NULL,
 		`category` enum('rl_category','rl_reference') NOT NULL,
 		`lang` varchar(10) NOT NULL DEFAULT 'de',
@@ -445,11 +445,11 @@ class CreateTableQueries():
 
 	def TaxaRedList(self):
 		return """CREATE TABLE `{0}_TaxaRedLists` (
-		`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-		`taxon_id` int(10) unsigned NOT NULL,
+		`id` INT NOT NULL AUTO_INCREMENT,
+		`taxon_id` INT NOT NULL,
 		`value` varchar(50) NOT NULL,
-		`category_id` int(10) unsigned NOT NULL,
-		`reference_id` int(10) unsigned NOT NULL,
+		`category_id` INT NOT NULL,
+		`reference_id` INT NOT NULL,
 		PRIMARY KEY (`id`),
 		KEY `taxon_id` (`taxon_id`),
 		KEY `category_id` (`category_id`),
@@ -458,7 +458,7 @@ class CreateTableQueries():
 
 	def Institutes(self):
 		return """CREATE TABLE `{0}_Institutes` (
-		`institute_id` int(10) unsigned NOT NULL auto_increment,
+		`institute_id` INT NOT NULL auto_increment,
 		`ExternalDatasourceID` int(10) NOT NULL,
 		`DatasourceID` int(10) NOT NULL,
 		`project_institute` varchar(255) NOT NULL,
@@ -507,7 +507,7 @@ class CreateTableQueries():
 
 	def CollectionProject(self):
 		return """CREATE TABLE `{0}_CollectionProject` (
-		`specimen_id` int(10) unsigned NOT NULL,
+		`specimen_id` INT NOT NULL,
 		`ProjectID` int(10) NOT NULL,
 		`DatasourceID` INT(10) NOT NULL,
 		KEY (`specimen_id`),
@@ -519,8 +519,8 @@ class CreateTableQueries():
 
 	def Media(self):
 		return """CREATE TABLE `{0}_Media` (
-		`id` int(10) unsigned NOT NULL auto_increment,
-		`specimen_id` int(10) unsigned NOT NULL,
+		`id` INT NOT NULL auto_increment,
+		`specimen_id` INT NOT NULL,
 		`media_url` varchar(3000),
 		`media_creator` varchar(3000),
 		`license` varchar(3000),
@@ -532,8 +532,8 @@ class CreateTableQueries():
 
 	def SpecimenCompleteness(self):
 		return """CREATE TABLE `{0}_SpecimenCompleteness` (
-		`id` int(10) unsigned NOT NULL auto_increment,
-		`specimen_id` int(10) unsigned NOT NULL,
+		`id` INT NOT NULL auto_increment,
+		`specimen_id` INT NOT NULL,
 		`filled_terms` INT(10),
 		`grouped_percent` INT(3),
 		PRIMARY KEY (`id`),

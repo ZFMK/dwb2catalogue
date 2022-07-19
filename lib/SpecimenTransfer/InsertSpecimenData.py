@@ -62,7 +62,7 @@ class InsertSpecimenData(DBInsert):
 	
 	def setTempTableQueries(self):
 		self.createtemptable ="""CREATE TEMPORARY TABLE `{0}_Data_Temp`
-		(DatasourceID int(10), `specimen_id` int(10) unsigned, `unit_id` int(10) unsigned, `term` varchar(3000), `field_id` int(10) unsigned -- ,
+		(DatasourceID int(10), `specimen_id` INT, `unit_id` INT, `term` varchar(3000), `field_id` INT -- ,
 		 -- KEY (DatasourceID),
 		 -- KEY (`specimen_id`),
 		 -- KEY (`unit_id`),

@@ -52,6 +52,12 @@ class ConfigReader():
 				self.gbif_taxa_table = self.config.get('GBIF_DB', 'table')
 		else:
 			self.use_gbif_taxa = False
+		
+		if self.config.has_option('option', 'parent_collection_name'):
+			self.parent_collection_name = self.config.get('option', 'parent_collection_name')
+		else:
+			self.parent_collection_name = None
+		
 		return
 
 

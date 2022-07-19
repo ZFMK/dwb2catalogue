@@ -52,7 +52,7 @@ class InsertCollectionProject(DBInsert):
 			`DatasourceID` int(10) NOT NULL,
 			`CollectionSpecimenID` int(10) NOT NULL,
 			`IdentificationUnitID` int(10) NOT NULL,
-			`ProjectID` int(10) unsigned NOT NULL,
+			`ProjectID` INT NOT NULL,
 			KEY (`DatasourceID`),
 			KEY (`CollectionSpecimenID`),
 			KEY (`IdentificationUnitID`),

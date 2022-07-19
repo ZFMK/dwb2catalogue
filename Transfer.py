@@ -5,6 +5,7 @@
 
 import pudb
 import datetime
+import argparse
 
 import time
 
@@ -75,12 +76,21 @@ logger = logging.getLogger('sync_webportal')
 
 
 if __name__ == "__main__":
+	usage = "Transfer.py [--skip taxamerger]"
+	parser = argparse.ArgumentParser(prog="Transfer.py", usage=usage, description='Arguments for Transfer.py')
+	parser.add_argument('--skip', metavar = 'taxamerger')
+	args = parser.parse_args()
+	
+	
 	logger.info("\n\n======= S t a r t - {:%Y-%m-%d %H:%M:%S} ======".format(datetime.datetime.now()))
 	
 	globalconfig = ConfigReader(config)
 	
-	taxonomiesmerger = TaxonomiesMerger(globalconfig)
-	taxonomiesmerger.mergeTaxonomies()
+	if args.skip == 'taxamerger':
+		pass
+	else:
+		taxonomiesmerger = TaxonomiesMerger(globalconfig)
+		taxonomiesmerger.mergeTaxonomies()
 	
 	
 	tempdb = TempDB(globalconfig)

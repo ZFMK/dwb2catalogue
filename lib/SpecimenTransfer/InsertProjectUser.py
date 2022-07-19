@@ -54,7 +54,7 @@ class InsertProjectUser(DBInsert):
 		self.createtemptable ="""CREATE TEMPORARY TABLE `{0}_ProjectUser_Temp` (
 			`DatasourceID` int(10) NOT NULL,
 			`LoginName` VARCHAR(255),
-			`ProjectID` int(10) unsigned NOT NULL,
+			`ProjectID` INT NOT NULL,
 			KEY (`DatasourceID`),
 			KEY (`LoginName`),
 			KEY (`ProjectID`)

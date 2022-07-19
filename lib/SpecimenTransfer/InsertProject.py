@@ -50,7 +50,7 @@ class InsertProject(DBInsert):
 	def setTempTableQueries(self):
 		self.createtemptable ="""CREATE TEMPORARY TABLE `{0}_Project_Temp` (
 			`DatasourceID` int(10) NOT NULL,
-			`ProjectID` int(10) unsigned NOT NULL,
+			`ProjectID` INT NOT NULL,
 			`Project` VARCHAR(50),
 			`ProjectURI` VARCHAR(255),
 			KEY (`DatasourceID`),

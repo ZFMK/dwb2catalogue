@@ -18,7 +18,7 @@ class MySQLConnector():
 		if config is None:
 			self.config = {
 			'host': 'localhost',
-			'passwd': '',
+			'passwd': None,
 			'charset': 'utf8',
 			'port': '3306',
 			'user': None,
@@ -64,7 +64,7 @@ class MySQLConnector():
 		try:
 			con = pymysql.connect(host=self.config['host'], user=self.config['user'], passwd=self.config['passwd'], db=self.config['db'], port=int(self.config['port']), charset=self.config['charset'], client_flag=MULTI_STATEMENTS)
 		except pymysql.Error as e:
-			log.critical("Error {0}: {1}".format(*e.args))
+			logger.critical("Error {0}: {1}".format(*e.args))
 			raise
 		return con
 
