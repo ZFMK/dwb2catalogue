@@ -58,7 +58,6 @@ class CopyResultDB():
 					tables2copy.append(table)
 			
 			sorted_tables = temp_db.getTableNamesSortedByForeignKeys(tables2copy)
-			
 			sorted_tables.extend(['taxa_matched', 'taxa_not_matched'])
 			
 			reversed_tables = reversed(sorted_tables)

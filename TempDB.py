@@ -149,8 +149,9 @@ class CreateTableQueries():
 		res_a['TaxaFlat'] = self.TaxaFlat
 		res_a['Media'] = self.Media
 		res_a['SpecimenCompleteness'] = self.SpecimenCompleteness
+		res_a['taxa_matched'] = self.taxa_matched
+		res_a['taxa_not_matched'] = self.taxa_not_matched
 		for table_name, query in iter(res_a.items()):
-			#if table_name!='Transfer_ID_Mapping':
 			yield (table_name, query)
 
 
@@ -543,6 +544,34 @@ class CreateTableQueries():
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='count of the number of terms filled for each specimens, used for a label showing the quality of the specimens data'
 		;
 		""".format(self.db_suffix)
+
+	def taxa_matched(self):
+		query = """
+		CREATE TABLE IF NOT EXISTS taxa_matched
+		(
+		`specimen_id` INT(10),
+		`taxon_id` INT(10),
+		`taxon_name` varchar(255),
+		KEY `specimen_id` (`specimen_id`),
+		KEY `taxon_id` (taxon_id),
+		KEY `taxon_name` (`taxon_name`)
+		)
+		;"""
+		return query
+
+	def taxa_not_matched(self):
+		query = """
+		CREATE TABLE IF NOT EXISTS taxa_not_matched
+		(
+		`specimen_id` INT(10),
+		`scientificName` varchar(255),
+		`taxon_name` varchar(255),
+		KEY `specimen_id` (`specimen_id`),
+		KEY `scientificName` (`scientificName`),
+		KEY `taxon_name` (`taxon_name`)
+		)
+		;"""
+		return query
 
 	def fill_category_field(self):
 		"""
