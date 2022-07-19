@@ -52,12 +52,15 @@ class CopyResultDB():
 			logger.info('Replacing {0} specimen with {1} specimen'.format(prod_sp_num, temp_sp_num))
 			
 			tables = temp_db.getTableNames()
-			tables2copy = ['taxa_matched', 'taxa_not_matched']
+			tables2copy = []
 			for table in tables:
 				if table.startswith(self.config.db_suffix):
 					tables2copy.append(table)
 			
 			sorted_tables = temp_db.getTableNamesSortedByForeignKeys(tables2copy)
+			
+			sorted_tables.extend(['taxa_matched', 'taxa_not_matched'])
+			
 			reversed_tables = reversed(sorted_tables)
 			
 			for table in reversed_tables:
